@@ -9,7 +9,7 @@ public class SenseDevice {
 	Set<String> baselineDevices = new TreeSet<>();
 	
 	public SenseDevice () {
-		baseline();
+		init();
 	}
 
 	public static Set<String> deviceList () {
@@ -18,8 +18,12 @@ public class SenseDevice {
 		return list;
 	}
 	
-	public void baseline () {
+	public void init () {
 		baselineDevices = deviceList();
+	}
+	
+	public Set<String> baseline () {
+		return baselineDevices;
 	}
 	
 	public boolean changed () {
@@ -43,7 +47,7 @@ public class SenseDevice {
 		while(true) {
 			if (sd.changed()) {
 				System.out.println( "added: "+sd.addedDevices()+", removed: "+sd.removedDevices() );
-				sd.baseline();
+				sd.init();
 			}
 			Thread.sleep(1000);
 		}

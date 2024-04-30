@@ -11,14 +11,14 @@ public class DuplicateDisk {
 	private Map<String,SystemCommand> processes;
 
 	private void checkOutput ( String device ) throws Exception {
-		if ( ! devices.addedDevices().contains( device ) ) throw new Exception( device+" was attached before DuplicateDisk started!" );
+		if ( devices.baseline().contains( device ) ) throw new Exception( device+" was attached before DuplicateDisk started!" );
 		if ( processes.keySet().contains( device ) ) throw new Exception( device+" is being written by another process!" );
 	}
 
 	private String checkPath ( String device ) throws Exception {
 		File file = new File( device );
-		if (file.exists()) return file.getAbsolutePath();
-		else throw new Exception( "Can't access "+device+"!" );
+		if (!file.exists()) file.createNewFile();
+		return file.getAbsolutePath();
 	}
 	
 	
@@ -44,7 +44,7 @@ public class DuplicateDisk {
 		);
 		
 		processes.put( output, ddProc );
-		new Thread( ddProc );
+		new Thread( ddProc ).start();
 	}
 	
 	public Table status ( Table table ) {
@@ -60,9 +60,9 @@ public class DuplicateDisk {
 
 	public static void main ( String[] args ) throws Exception {
 		DuplicateDisk dd = new DuplicateDisk();
-		dd.dd( "/dev/null", "zeros_0.img" );
+		dd.dd( "/dev/zero", "zeros_0.img" );
 		Thread.sleep(1000);
-		dd.dd( "/dev/null", "zeros_1.img" );
+		dd.dd( "/dev/zero", "zeros_1.img" );
 		while (true) {
 			Thread.sleep(1000);
 			System.out.println( dd.status( new SimpleTable() ) );
