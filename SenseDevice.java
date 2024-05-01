@@ -3,6 +3,7 @@ package watercarrier;
 import java.util.*;
 import java.io.*;
 import paddle.*;
+import creek.*;
 
 public class SenseDevice {
 
@@ -41,11 +42,35 @@ public class SenseDevice {
 		removed.removeAll( deviceList() );
 		return removed;
 	}
+	
+	public Table deviceInfo () {
+		return deviceInfo( addedDevices() );
+	}
+
+	public Table deviceInfo ( Set<String> devices ) {
+		String lsblkOutput = (new SystemCommand( "lsblk --json --output name,size" )).output();
+		Tree blkTree = null;
+		try {
+			blkTree = new JSON( lsblkOutput );
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		Tree infoTree = new JSON();
+		System.out.println( devices );
+		for (Tree device : blkTree.get("blockdevices").branches()) {
+			String deviceName = device.get("name").value();
+			if (devices.contains(deviceName)) {
+				infoTree.add( deviceName, device.get("size").value() );
+			}
+		}
+		return new SimpleTable().data( infoTree.paths() );
+	}
 
 	public static void main(String[] args) throws Exception {
 		SenseDevice sd = new SenseDevice();
 		while(true) {
 			if (sd.changed()) {
+				System.out.println( sd.deviceInfo( sd.addedDevices() ) );
 				System.out.println( "added: "+sd.addedDevices()+", removed: "+sd.removedDevices() );
 				sd.init();
 			}
