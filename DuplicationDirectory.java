@@ -46,7 +46,9 @@ public class DuplicationDirectory {
 	public String filesHTML () {
 		Table table = new SimpleTable();
 		table.append( new String[]{ "", "File", "Size" } );
-		for (File file : directory.listFiles()) {
+		List<File> dirList = Arrays.asList( directory.listFiles() );
+		Collections.sort( dirList );
+		for (File file : dirList) {
 			if (FileActions.extension(file).equals("gz")) table.append( fileAttributes( file ) );
 		}
 		return Tables.html(table);

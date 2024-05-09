@@ -22,7 +22,7 @@ public class DuplicationStation extends ServerState {
 	}
 	
 	public void received ( Connection c ) {
-		print( c );
+		//print( c );
 		if (c instanceof InboundHTTP) {
 			InboundHTTP session = (InboundHTTP)c;
 			if (session.request().path().equals("/duplication")) {
@@ -31,7 +31,7 @@ public class DuplicationStation extends ServerState {
 			
 				// process duplication command
 				Map<String,String> query = session.request().query();
-				System.out.println( query );
+				System.out.println( "********************\nQuery: "+query+"\n********************\n" );
 				if (query.containsKey("file") && query.containsKey("device") && query.containsKey("command")) {
 					String file = query.get("file");
 					String disk = query.get("disk");
@@ -67,7 +67,7 @@ public class DuplicationStation extends ServerState {
 						"</form> <br>\n"+
 
 						"<script>\n"+
-						"function confirmSubmit () { document.duplicationForm.command.value = 'start'; return confirm('Start writing?'); } }\n"+
+						"function confirmSubmit () { document.duplicationForm.command.value = 'start'; return confirm('Start writing?'); }\n"+
 						"</script>\n"+
 
 						"</body>\n</html>\n"
@@ -80,11 +80,11 @@ public class DuplicationStation extends ServerState {
 			}
 		} else if (c instanceof OutboundHTTP) {
 			OutboundHTTP session = (OutboundHTTP)c;
-			System.out.println(
+			/*System.out.println(
 				"----\nResponse:\n\n"+
 				(new String(session.response().data()))+
 				"\n----"
-			);
+			);*/
 		}
 	}
 	
