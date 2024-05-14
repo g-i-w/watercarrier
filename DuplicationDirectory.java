@@ -31,6 +31,60 @@ public class DuplicationDirectory {
 		duplicator = new DuplicateDisk( sensor );
 	}
 	
+	public String fileToDisk ( String file, String disk ) {
+		file = new File( directory, file ).getAbsolutePath();
+		try {
+			duplicator.fileToDisk( file, disk );
+			return "Writing file '"+file+"' to disk '"+disk+"'...";
+		} catch (Exception e) {
+			e.printStackTrace();
+			return e.getMessage();
+		}
+	}
+	
+	public String diskToFile ( String disk, String file ) {
+		file = new File( directory, file ).getAbsolutePath();
+		try {
+			duplicator.diskToFile( disk, file );
+			return "Writing disk '"+disk+"' to file '"+file+"'...";
+		} catch (Exception e) {
+			e.printStackTrace();
+			return e.getMessage();
+		}
+	}
+	
+	public String cancel ( String disk ) {
+		duplicator.cancel( disk );
+		return "Canceling writing to '"+disk+"'...";
+	}
+	
+	public SenseDevice sensor () {
+		return sensor;
+	}
+	
+	public DuplicateDisk duplicator () {
+		return duplicator;
+	}
+	
+	// INPUT: query map
+	
+	public String processQuery ( Map<String,String> query ) {
+		String statusMessage = "";
+		if (query.containsKey("file") && query.containsKey("device") && query.containsKey("command")) {
+			String file = query.get("file");
+			String device = query.get("device");
+			String command = query.get("command");
+			if (command.equals("start")) {
+				statusMessage = fileToDisk( file, device );
+			} else if (command.equals("cancel")) {
+				statusMessage = cancel(device);
+			}
+		}
+		return statusMessage;
+	}
+	
+	// OUTPUT: HTML tables
+	
 	public String[] fileAttributes ( File file ) {
 		String name = file.getName();
 		long size = 0;
@@ -55,53 +109,52 @@ public class DuplicationDirectory {
 	}
 	
 	public String devicesHTML () {
-		Table deviceInfo = sensor.deviceInfo();
-		for (List<String> line : deviceInfo.data()) {
-			if (line.size()>1) line.add(0, "<input type=\"radio\" name=\"device\" value=\""+line.get(0)+"\">");
+		Table deviceTable = new SimpleTable();
+		deviceTable.append( new String[]{ "", "Device", "Size" } );
+		for (Map.Entry<String,String> entry : duplicator.safeDevicesInfo().entrySet()) {
+			String device = entry.getKey();
+			String info = entry.getValue();
+			deviceTable.append( new String[]{
+				"<input type=\"radio\" name=\"device\" value=\""+device+"\">",
+				device,
+				info
+			});
 		}
-		deviceInfo.data().add( 0, Arrays.asList( new String[]{ "", "Device", "Size" } ) );
-		return Tables.html( deviceInfo );
+		return Tables.html( deviceTable );
+	}
+	
+	public String devicesCommandStatusHTML ( String baseURL, String fileName ) {
+		StringBuilder html = new StringBuilder();
+		for (Map.Entry<String,String> entry : duplicator.safeDevicesInfo().entrySet()) {
+			String device = entry.getKey();
+			String info = entry.getValue();
+			String link = "<a class=\"device link\" href=\""+baseURL+"?file="+fileName+"&device="+device+"&command=start\">Start</a>";
+			String status = "";
+			if ( duplicator.processes().containsKey(device) ) {
+				status = duplicator.processes().get(device).stderr().text();
+				link = "<a class=\"deviceCommandLink\" href=\""+baseURL+"?file="+fileName+"&device="+device+"&command=cancel\">Cancel</a>";
+			}
+			html
+				.append( "<div class=\"device\">" )
+				.append( "<div class=\"device name\">"+device+"</div>" )
+				.append( "<div class=\"device info\">"+info+"</div>" )
+				.append( "<div class=\"device command\">"+link+"</div>" )
+				.append( "<div class=\"device status\">"+status+"</div>" )
+				.append( "</div>" )
+			;
+		}
+		return html.toString();
 	}
 	
 	public String statusHTML () {
 		return Tables.html(duplicator.status( new SimpleTable() ));
 	}
 	
-	public String fileToDisk ( String file, String disk ) {
-		disk = "/dev/"+disk;
-		file = new File( directory, file ).getAbsolutePath();
-		try {
-			duplicator.fileToDisk( file, disk );
-			return "Writing file '"+file+"' to disk '"+disk+"'...";
-		} catch (Exception e) {
-			e.printStackTrace();
-			return e.getMessage();
-		}
-	}
 	
-	public String diskToFile ( String disk, String file ) {
-		disk = "/dev/"+disk;
-		file = new File( directory, file ).getAbsolutePath();
-		try {
-			duplicator.diskToFile( disk, file );
-			return "Writing disk '"+disk+"' to file '"+file+"'...";
-		} catch (Exception e) {
-			e.printStackTrace();
-			return e.getMessage();
-		}
-	}
+	// testing
 	
-	public String cancel ( String disk ) {
-		duplicator.cancel( "/dev/"+disk );
-		return "Canceling writing to '"+disk+"'...";
-	}
-	
-	public SenseDevice sensor () {
-		return sensor;
-	}
-	
-	public DuplicateDisk duplicator () {
-		return duplicator;
+	public static void main ( String[] args ) throws Exception {
+		new DuplicationDirectory( args[0] );
 	}
 
 }

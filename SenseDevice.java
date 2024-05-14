@@ -8,6 +8,7 @@ import creek.*;
 public class SenseDevice {
 
 	Set<String> baselineDevices = new TreeSet<>();
+	Set<String> lastCheck;
 	
 	public SenseDevice () {
 		init();
@@ -21,6 +22,7 @@ public class SenseDevice {
 	
 	public void init () {
 		baselineDevices = deviceList();
+		lastCheck = baselineDevices;
 	}
 	
 	public Set<String> baseline () {
@@ -28,7 +30,12 @@ public class SenseDevice {
 	}
 	
 	public boolean changed () {
-		return !deviceList().equals( baselineDevices );
+		Set<String> thisCheck = deviceList();
+		if (!lastCheck.equals( thisCheck )) {
+			lastCheck = thisCheck;
+			return true;
+		}
+		return false;
 	}
 	
 	public Set<String> addedDevices () {

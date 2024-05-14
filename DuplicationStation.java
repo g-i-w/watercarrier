@@ -8,9 +8,13 @@ import paddle.*;
 public class DuplicationStation extends ServerState {
 
 	DuplicationDirectory duplication;
+	TemplateFile duplicationTemplate;
+	TemplateFile biblesdTemplate;
 
 	public DuplicationStation ( String dir, int port ) throws Exception {
 		duplication = new DuplicationDirectory( dir );
+		duplicationTemplate = new TemplateFile( "watercarrier/duplication.html", "////" );
+		biblesdTemplate = new TemplateFile( "watercarrier/biblesd.html", "////" );
 		ServerHTTP server = new ServerHTTP (
 			this,
 			port,
@@ -24,60 +28,54 @@ public class DuplicationStation extends ServerState {
 	public void received ( Connection c ) {
 		//print( c );
 		if (c instanceof InboundHTTP) {
+			// convert type to InboundHTTP
 			InboundHTTP session = (InboundHTTP)c;
+			
+			// check path
 			if (session.request().path().equals("/duplication")) {
 			
-				String statusMessage = "";
+				// process the query key=value data				
+				String statusMessage = duplication.processQuery( session.request().query() );
+				
+				// fill in blanks in the TemplateFile
+				duplicationTemplate
+					.replace( "filesTable", duplication.filesHTML() )
+					.replace( "devicesTable", duplication.devicesHTML() )
+					.replace( "statusTable", duplication.statusHTML() )
+					.replace( "statusMessage", statusMessage )
+				;
 			
-				// process duplication command
-				Map<String,String> query = session.request().query();
-				System.out.println( "********************\nQuery: "+query+"\n********************\n" );
-				if (query.containsKey("file") && query.containsKey("device") && query.containsKey("command")) {
-					String file = query.get("file");
-					String disk = query.get("disk");
-					String command = query.get("command");
-					if (command.equals("start")) {
-						statusMessage = duplication.fileToDisk( file, disk );
-					} else if (command.equals("cancel")) {
-						statusMessage = duplication.cancel(disk);
-					}
-				}
-			
-				// respond with HTML
+				// HTTP response
 				session.response(
 					new ResponseHTTP(
 						new String[]{ "Content-Type", "text/html" },
-						
-						"<html>\n<head>\n"+
-						"<title>Duplication</title>\n"+
-						//"<meta http-equiv=\"refresh\" content=\"4\" />\n"+
-						"</head>\n<body onload=\"window.history.pushState({}, document.title, '/duplication' );\">\n"+
-
-						"<div style=\"background-color:lightgray;width:100%;\"><a href=\"/duplication\">Refresh Page</span></a></div>\n"+
-						
-						"<form name=\"duplicationForm\" action=\"/duplication\" onsubmit=\"confirmSubmit();\">\n"+
-						"<input type=\"hidden\"  name=\"command\"  value=\"\">\n"+
-						"<h2>Image Files:</h2>\n"+
-						duplication.filesHTML()+"\n<br>\n"+
-						"<h2>Removable Media:</h2>\n"+
-						duplication.devicesHTML()+"\n<br>\n"+
-						"<input type=\"submit\"  value=\"Start\">\n"+
-						"<h2>Status:</h2><br>"+statusMessage+"\n"+
-						duplication.statusHTML()+"\n<br>\n"+
-						"</form> <br>\n"+
-
-						"<script>\n"+
-						"function confirmSubmit () { document.duplicationForm.command.value = 'start'; return confirm('Start writing?'); }\n"+
-						"</script>\n"+
-
-						"</body>\n</html>\n"
+						duplicationTemplate.toString()
 					)
 				);
+				
+			} else if (session.request().path().equals("/biblesd")) {
+			
+				// process the query key=value data
+				session.request().query().put( "file", "biblesd-20240426.img.gz" );
+				String statusMessage = duplication.processQuery( session.request().query() );
+				
+				// fill in blanks in the TemplateFile
+				biblesdTemplate.replace( "deviceDivs", duplication.devicesCommandStatusHTML( "biblesd", "biblesd-20240426.img.gz" ) );
+			
+				// HTTP response
+				session.response(
+					new ResponseHTTP(
+						new String[]{ "Content-Type", "text/html" },
+						biblesdTemplate.toString()
+					)
+				);
+				
 			} else {
 				session.response(
 					new ResponseHTTP( "not found" )
 				);
 			}
+			
 		} else if (c instanceof OutboundHTTP) {
 			OutboundHTTP session = (OutboundHTTP)c;
 			/*System.out.println(

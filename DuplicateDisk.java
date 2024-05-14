@@ -11,13 +11,8 @@ public class DuplicateDisk {
 	private SenseDevice devices;
 	private Map<String,SystemCommand> processes;
 
-	private void checkOutput ( String device ) throws Exception {
-		if ( devices.baseline().contains( device ) ) throw new Exception( device+" was attached before DuplicateDisk started!" );
-		if ( processes.keySet().contains( device ) && !processes.get(device).done() ) throw new Exception( device+" is being written by another process!" );
-	}
-
-	private String checkPath ( String device ) throws Exception {
-		File file = new File( device );
+	private String checkPath ( String path ) throws Exception {
+		File file = new File( path );
 		if (!file.exists()) file.createNewFile();
 		return file.getAbsolutePath();
 	}
@@ -32,12 +27,15 @@ public class DuplicateDisk {
 		devices = sd;
 	}
 	
-	public void diskToFile ( String disk, String file ) throws Exception {
-		dd( disk, file, "./watercarrier/diskToFile.sh" );
+	public void diskToFile ( String device, String file ) throws Exception {
+		if (! devices.deviceList().contains(device)) throw new Exception( device+" not found" );
+		dd( "/dev/"+device, file, "./watercarrier/diskToFile.sh" );
 	}
 
-	public void fileToDisk ( String file, String disk ) throws Exception {
-		dd( file, disk, "./watercarrier/fileToDisk.sh" );
+	public void fileToDisk ( String file, String device ) throws Exception {
+		System.out.println( "DuplicateDisk: "+devices.addedDevices()+": "+device );
+		if (! devices.addedDevices().contains(device)) throw new Exception( device+" is not an added device" );
+		dd( file, "/dev/"+device, "./watercarrier/fileToDisk.sh" );
 	}
 
 	public void dd ( String in, String out ) throws Exception {
@@ -45,9 +43,10 @@ public class DuplicateDisk {
 	}
 
 	public void dd ( String in, String out, String script ) throws Exception {
+		if (processes.keySet().contains(out) && !processes.get(out).done()) throw new Exception( out+" is busy" );
+		
 		String input = checkPath( in );
 		String output = checkPath( out );
-		checkOutput( output );
 		
 		String name = "IN: "+input+", OUT:"+output;
 		String command = script+" "+input+" "+output;
@@ -65,6 +64,34 @@ public class DuplicateDisk {
 		
 		processes.put( output, ddProc );
 		new Thread( ddProc ).start();
+	}
+	
+	public Set<String> addedDevices () {
+		return devices.addedDevices();
+	}
+	
+	public Set<String> safeDevices () {
+		Set<String> safe = new TreeSet<>();
+		for (String device : addedDevices()) {
+			if (
+				Regex.exists( device, "^sd[b-z]$" ) ||
+				Regex.exists( device, "^mmcblk[0-9]$" )
+			) safe.add( device );
+		}
+		return safe;
+	}
+	
+	public Map<String,String> safeDevicesInfo () {
+		Map<String,String> info = new TreeMap<>();
+		Table deviceInfo = devices.deviceInfo();
+		for (List<String> row : deviceInfo.data()) {
+			if (row.size()>1) info.put( row.get(0), row.get(1) );
+		}
+		return info;
+	}
+	
+	public boolean changed () {
+		return devices.changed();
 	}
 	
 	public Map<String,SystemCommand> processes () {
@@ -105,7 +132,7 @@ public class DuplicateDisk {
 		return table;
 	}
 	
-	public static void main ( String[] args ) throws Exception {
+	public static void testing ( String[] args ) throws Exception {
 		DuplicateDisk dd = new DuplicateDisk();
 		dd.diskToFile( "/dev/zero", "zeros_0.img.gz" );
 		Thread.sleep(1000);
@@ -127,6 +154,40 @@ public class DuplicateDisk {
 			System.out.println( dd.status( new SimpleTable() ) );
 		}
 		dd.fileToDisk( "zeros_1.img.gz", "/dev/null" ); // should throw an exception
+	}
+	
+	public static void main ( String[] args ) throws Exception {
+		//testing(args);
+		
+		DuplicateDisk dd = new DuplicateDisk();
+		String gzipFile = args[0];
+		String output = "";
+		
+		Scanner scanner = new Scanner( System.in );
+		
+		while (true) {
+			if (dd.changed()) {
+				System.out.println( "Devices: "+dd.safeDevicesInfo()+"\nSelect device > " );
+				String input = scanner.nextLine().trim();
+				if (input.equals("q")) break;
+				if (!input.equals("")) {
+					try {
+						dd.fileToDisk( gzipFile, input );
+						System.out.println( "Cloning "+gzipFile+" --> "+input+"..." );
+					} catch (Exception e) {
+						System.err.println( e );
+					}
+				} else {
+					System.out.println( "Canceled" );
+				}
+			}
+			Thread.sleep(500);
+			String nextOutput = dd.status( new SimpleTable() ).toString();
+			if (!output.equals(nextOutput)) {
+				output = nextOutput;
+				System.out.println( output );
+			}
+		}
 	}
 
 }
