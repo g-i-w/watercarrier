@@ -10,11 +10,17 @@ public class DuplicationStation extends ServerState {
 	DuplicationDirectory duplication;
 	TemplateFile duplicationTemplate;
 	TemplateFile biblesdTemplate;
+	byte[] biblesdImage;
+	TemplateFile biblelocalsdTemplate;
+	//byte[] biblelocalsdImage;
 
 	public DuplicationStation ( String dir, int port ) throws Exception {
 		duplication = new DuplicationDirectory( dir );
 		duplicationTemplate = new TemplateFile( "watercarrier/duplication.html", "////" );
 		biblesdTemplate = new TemplateFile( "watercarrier/biblesd.html", "////" );
+		biblesdImage = FileActions.readBytes( "watercarrier/biblesd.png" );
+		biblelocalsdTemplate = new TemplateFile( "watercarrier/biblelocalsd.html", "////" );
+		//biblelocalsdImage = FileActions.readBytes( "watercarrier/biblelocalsd.png" );
 		ServerHTTP server = new ServerHTTP (
 			this,
 			port,
@@ -60,7 +66,8 @@ public class DuplicationStation extends ServerState {
 				String statusMessage = duplication.processQuery( session.request().query() );
 				
 				// fill in blanks in the TemplateFile
-				biblesdTemplate.replace( "deviceDivs", duplication.devicesCommandStatusHTML( "biblesd", "biblesd-20240426.img.gz" ) );
+				biblesdTemplate.replace( "statusMessage", statusMessage );
+				biblesdTemplate.replace( "deviceDivs", duplication.devicesCommandStatusHTML( "biblesd", "biblesd-20240426.img.gz", "fileToDisk" ) );
 			
 				// HTTP response
 				session.response(
@@ -70,6 +77,38 @@ public class DuplicationStation extends ServerState {
 					)
 				);
 				
+			} else if (session.request().path().equals("/biblesd.png")) {
+				session.response(
+					new ResponseHTTP(
+						new String[]{ "Content-Type", "image/png" },
+						biblesdImage
+					)
+				);
+			} else if (session.request().path().equals("/biblelocalsd")) {
+			
+				// process the query key=value data
+				session.request().query().put( "file", "biblelocalsd.img.gz" );
+				String statusMessage = duplication.processQuery( session.request().query() );
+				
+				// fill in blanks in the TemplateFile
+				biblelocalsdTemplate.replace( "statusMessage", statusMessage );
+				biblelocalsdTemplate.replace( "deviceDivs", duplication.devicesCommandStatusHTML( "biblelocalsd", "biblelocalsd.img.gz", "fileToDiskCopyGz" ) );
+			
+				// HTTP response
+				session.response(
+					new ResponseHTTP(
+						new String[]{ "Content-Type", "text/html" },
+						biblelocalsdTemplate.toString()
+					)
+				);
+				
+			} else if (session.request().path().equals("/biblelocalsd.png")) {
+				/*session.response(
+					new ResponseHTTP(
+						new String[]{ "Content-Type", "image/png" },
+						biblelocalsdImage
+					)
+				);*/
 			} else {
 				session.response(
 					new ResponseHTTP( "not found" )
@@ -86,6 +125,10 @@ public class DuplicationStation extends ServerState {
 		}
 	}
 	
+	public void transmitted ( Connection c ) {
+	// do nothing
+	}
+
 	public static void main ( String[] args ) throws Exception {
 		DuplicationStation ds = new DuplicationStation( args[0], Integer.parseInt(args[1]) );
 	}

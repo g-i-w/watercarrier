@@ -31,13 +31,34 @@ public class DuplicateDisk {
 		if (! devices.deviceList().contains(device)) throw new Exception( device+" not found" );
 		dd( "/dev/"+device, file, "./watercarrier/diskToFile.sh" );
 	}
-
+	
 	public void fileToDisk ( String file, String device ) throws Exception {
-		System.out.println( "DuplicateDisk: "+devices.addedDevices()+": "+device );
-		if (! devices.addedDevices().contains(device)) throw new Exception( device+" is not an added device" );
+		beforeDiskWrite( device );
 		dd( file, "/dev/"+device, "./watercarrier/fileToDisk.sh" );
 	}
-
+	
+	public void fileToDiskCopyGz ( String file, String device ) throws Exception {
+		beforeDiskWrite( device );
+		dd( file, "/dev/"+device, "./watercarrier/fileToDiskCopyGz.sh" );
+	}
+	
+	public void beforeDiskWrite ( String device ) throws Exception {
+		Tree safeDevicesTree = safeDevicesTree();
+		if (! safeDevicesTree.keys().contains(device)) throw new Exception( device+" is not a safe device" );
+		// unmount if mounted
+		Tree mountpoints = safeDevicesTree.get(device).get("mountpoints");
+		if (mountpoints.branches().size()>0) {
+			for (String mount : mountpoints.values()) {
+				if (! mount.equals("null")) {
+					System.out.println( "Unmounting "+mount+"..." );
+					System.out.println(
+						new SystemCommand( "umount "+mount ).output()
+					);
+				}
+			}
+		}
+	}
+	
 	public void dd ( String in, String out ) throws Exception {
 		dd( in, out, "./watercarrier/raw.sh" );
 	}
@@ -74,7 +95,7 @@ public class DuplicateDisk {
 		Set<String> safe = new TreeSet<>();
 		for (String device : addedDevices()) {
 			if (
-				Regex.exists( device, "^sd[b-z]$" ) ||
+				Regex.exists( device, "^sd[a-z]$" ) ||
 				Regex.exists( device, "^mmcblk[0-9]$" )
 			) safe.add( device );
 		}
@@ -84,10 +105,26 @@ public class DuplicateDisk {
 	public Map<String,String> safeDevicesInfo () {
 		Map<String,String> info = new TreeMap<>();
 		Table deviceInfo = devices.deviceInfo();
+		Set<String> safe = safeDevices();
 		for (List<String> row : deviceInfo.data()) {
-			if (row.size()>1) info.put( row.get(0), row.get(1) );
+			if (row.size()>1) {
+				String device = row.get(0);
+				if (safe.contains(device)) info.put( device, row.get(1) );
+			}
 		}
 		return info;
+	}
+	
+	public Tree safeDevicesTree () {
+		Tree deviceTree = devices.deviceTree();
+		if (deviceTree == null) return null;
+		Set<String> safe = safeDevices();
+		Tree safeDevices = new JSON();
+		for (Tree device : deviceTree.get("blockdevices").branches()) {
+			String name = device.get("name").value();
+			if (safe.contains(name)) safeDevices.add( name, device );
+		}
+		return safeDevices;
 	}
 	
 	public boolean changed () {
@@ -96,6 +133,26 @@ public class DuplicateDisk {
 	
 	public Map<String,SystemCommand> processes () {
 		return processes;
+	}
+	
+	public String processOutput ( String device ) {
+		SystemCommand proc = processes.get( "/dev/"+device );
+		if (proc!=null) return proc.stderr().text();
+		else return "";
+	}
+	
+	public int processStatus ( String device ) {
+		SystemCommand proc = processes.get( "/dev/"+device );
+		if (proc!=null) {
+			if (proc.running()) {
+				return 1;
+			} else {
+				if (proc.destroyed()>0 || proc.destroyedForcibly()>0) return 2;
+				else return 3;
+			}
+		} else {
+			return 0;
+		}
 	}
 	
 	public void cleanup () {
@@ -117,7 +174,7 @@ public class DuplicateDisk {
 			System.out.println( "killed "+output );
 		}
 	}
-
+	
 	public Table status ( Table table ) {
 		table.append( new String[]{ "Device", "Status", "Details" } );
 		for (Map.Entry<String,SystemCommand> entry : processes.entrySet()) {
@@ -163,10 +220,12 @@ public class DuplicateDisk {
 		String gzipFile = args[0];
 		String output = "";
 		
+		
 		Scanner scanner = new Scanner( System.in );
 		
 		while (true) {
 			if (dd.changed()) {
+				System.out.println( dd.safeDevicesTree().serialize() );
 				System.out.println( "Devices: "+dd.safeDevicesInfo()+"\nSelect device > " );
 				String input = scanner.nextLine().trim();
 				if (input.equals("q")) break;
