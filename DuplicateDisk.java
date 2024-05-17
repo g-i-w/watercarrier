@@ -13,7 +13,10 @@ public class DuplicateDisk {
 
 	private String checkPath ( String path ) throws Exception {
 		File file = new File( path );
-		if (!file.exists()) file.createNewFile();
+		if (!file.exists()) {
+			System.err.println( "Creating new file at '"+path+"' ..." );
+			file.createNewFile();
+		}
 		return file.getAbsolutePath();
 	}
 	
