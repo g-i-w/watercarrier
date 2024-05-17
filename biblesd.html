@@ -8,8 +8,14 @@
 body {
 	font-family:sans-serif;
 }
+div {
+	max-width:300px;
+	display:inline-block;
+	margin:4px 8px 4px 8px;
+	padding:2px 4px 2px 4px;
+	border-radius:4px;
+}
 .device {
-	position:inline-block;
 }
 .name {
 	font-weight:bold;
@@ -23,19 +29,33 @@ body {
 .status {
 
 }
-.link {
+.text {
+
+}
+a {
+	text-decoration:none;
+	font-weight:bold;
 	color:white;
+}
+a:hover {
+	text-decoration:underline;
 }
 </style>
 
 </head>
 
-<body onload="window.history.pushState( {}, document.title, '/duplication' );">
+<body>
+<!-- <body onload="window.history.pushState( {}, document.title, '/biblesd' );"> -->
 
-<div style="background-color:lightgray;width:100%;"><a href="/duplication">Refresh Page</span></a></div>
-
-////deviceDivs////
-
+	<h3>Create BibleSD cards</h3>
+	<img src="biblesd.png" style="max-width:300px;">
+	<br>
+	<div class="command"><a href="/biblesd">Refresh Device List</span></a></div>
+	<br>
+	<div>////statusMessage////</div>
+	<br>
+	<div>////deviceDivs////</div>
+	
 </body>
 </html>
 

@@ -53,9 +53,14 @@ public class DuplicationDirectory {
 		}
 	}
 	
-	public String cancel ( String disk ) {
-		duplicator.cancel( disk );
-		return "Canceling writing to '"+disk+"'...";
+	public String cancelFile ( String file ) {
+		duplicator.cancel( (new File( directory, file )).getAbsolutePath() );
+		return "Canceling writing to '"+file+"'...";
+	}
+	
+	public String cancelDisk ( String device ) {
+		duplicator.cancel( "/dev/"+device );
+		return "Canceling writing to '"+device+"'...";
 	}
 	
 	public SenseDevice sensor () {
@@ -69,6 +74,8 @@ public class DuplicationDirectory {
 	// INPUT: query map
 	
 	public String processQuery ( Map<String,String> query ) {
+		System.out.println( "**********\n"+query+"\n**********" );
+	
 		String statusMessage = "";
 		if (query.containsKey("file") && query.containsKey("device") && query.containsKey("command")) {
 			String file = query.get("file");
@@ -77,7 +84,8 @@ public class DuplicationDirectory {
 			if (command.equals("start")) {
 				statusMessage = fileToDisk( file, device );
 			} else if (command.equals("cancel")) {
-				statusMessage = cancel(device);
+				statusMessage = cancelDisk	(device);
+				System.out.println( "************** CANCELING! **************" );
 			}
 		}
 		return statusMessage;
@@ -128,11 +136,23 @@ public class DuplicationDirectory {
 		for (Map.Entry<String,String> entry : duplicator.safeDevicesInfo().entrySet()) {
 			String device = entry.getKey();
 			String info = entry.getValue();
-			String link = "<a class=\"device link\" href=\""+baseURL+"?file="+fileName+"&device="+device+"&command=start\">Start</a>";
-			String status = "";
-			if ( duplicator.processes().containsKey(device) ) {
-				status = duplicator.processes().get(device).stderr().text();
-				link = "<a class=\"deviceCommandLink\" href=\""+baseURL+"?file="+fileName+"&device="+device+"&command=cancel\">Cancel</a>";
+			String link = "<a href=\""+baseURL+"?file="+fileName+"&device="+device+"&command=start\">Start</a>";
+			String output = duplicator.processOutput( device );
+			int val = duplicator.processStatus( device );
+			String status;
+			switch (val) {
+				case 1:
+					status = "Writing...";
+					link = "<a href=\""+baseURL+"?file="+fileName+"&device="+device+"&command=cancel\">Cancel</a>";
+					break;
+				case 2:
+					status = "<span style=\"background-color:rgb(255,200,200);\">Canceled</span>";
+					break;
+				case 3:
+					status = "<span style=\"background-color:rgb(200,255,200);\">Complete</span>";
+					break;
+				default:
+					status = "";
 			}
 			html
 				.append( "<div class=\"device\">" )
@@ -140,10 +160,43 @@ public class DuplicationDirectory {
 				.append( "<div class=\"device info\">"+info+"</div>" )
 				.append( "<div class=\"device command\">"+link+"</div>" )
 				.append( "<div class=\"device status\">"+status+"</div>" )
+				.append( "<div class=\"device text\">"+output+"</div>" )
 				.append( "</div>" )
 			;
 		}
 		return html.toString();
+	}
+	
+	public Tree devicesStatus () {
+		Tree tree = new JSON();
+		for (Map.Entry<String,String> entry : duplicator.safeDevicesInfo().entrySet()) {
+			
+			String device = entry.getKey();
+			String info = entry.getValue();
+			int code = duplicator.processStatus( device );
+			String status;
+			switch (code) {
+				case 1:
+					status = "Writing";
+					break;
+				case 2:
+					status = "Canceled";
+					break;
+				case 3:
+					status = "Complete";
+					break;
+				default:
+					status = "";
+			}
+
+			tree.auto( device )
+				.add( "info", info )
+				.add( "output", duplicator.processOutput( device ) )
+				.add( "code", String.valueOf(code) )
+				.add( "status", status )
+			;
+		}
+		return tree;
 	}
 	
 	public String statusHTML () {

@@ -53,18 +53,24 @@ public class SenseDevice {
 	public Table deviceInfo () {
 		return deviceInfo( addedDevices() );
 	}
-
-	public Table deviceInfo ( Set<String> devices ) {
-		String lsblkOutput = (new SystemCommand( "lsblk --json --output name,size" )).output();
-		Tree blkTree = null;
+	
+	public Tree deviceTree () {
 		try {
-			blkTree = new JSON( lsblkOutput );
+			return new JSON(
+				(new SystemCommand( "lsblk --json --output name,size,mountpoints" )).output()
+			);
 		} catch (Exception e) {
 			e.printStackTrace();
+			return null;
 		}
+	}
+
+	public Table deviceInfo ( Set<String> devices ) {
+		//System.out.println( devices );
+		Tree deviceTree = deviceTree();
+		if (deviceTree == null) return new SimpleTable();
 		Tree infoTree = new JSON();
-		System.out.println( devices );
-		for (Tree device : blkTree.get("blockdevices").branches()) {
+		for (Tree device : deviceTree.get("blockdevices").branches()) {
 			String deviceName = device.get("name").value();
 			if (devices.contains(deviceName)) {
 				infoTree.add( deviceName, device.get("size").value() );
