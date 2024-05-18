@@ -62,12 +62,12 @@ public class DuplicationStation extends ServerState {
 			} else if (session.request().path().equals("/biblesd")) {
 			
 				// process the query key=value data
-				session.request().query().put( "file", "biblesd-20240426.img.gz" );
+				session.request().query().put( "file", "biblesd.img.gz" );
 				String statusMessage = duplication.processQuery( session.request().query() );
 				
 				// fill in blanks in the TemplateFile
 				biblesdTemplate.replace( "statusMessage", statusMessage );
-				biblesdTemplate.replace( "deviceDivs", duplication.devicesCommandStatusHTML( "biblesd", "biblesd-20240426.img.gz", "fileToDisk" ) );
+				biblesdTemplate.replace( "deviceDivs", duplication.devicesCommandStatusHTML( "biblesd", "biblesd.img.gz", "fileToDisk" ) );
 			
 				// HTTP response
 				session.response(
