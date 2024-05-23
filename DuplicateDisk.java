@@ -45,18 +45,34 @@ public class DuplicateDisk {
 		dd( file, "/dev/"+device, "./watercarrier/fileToDiskCopyGz.sh" );
 	}
 	
-	public void beforeDiskWrite ( String device ) throws Exception {
-		if (device.equals("null")) return; // allow "/dev/null" for testing
-		Tree safeDevicesTree = safeDevicesTree();
-		if (!safeDevicesTree.keys().contains(device)) throw new Exception( device+" is not a safe device" );
-		// unmount if mounted
-		Tree mountpoints = safeDevicesTree.get(device).get("mountpoints");
-		for (String mount : mountpoints.values()) {
+	public void mmcblk0ToDisk ( String device ) throws Exception {
+		beforeDiskWrite( device );
+		dd( "/dev/mmcblk0", "/dev/"+device );
+	}
+	
+	public void umount ( Tree device ) {
+		for (String mount : device.get("mountpoints").values()) {
 			if (! mount.equals("null")) {
 				System.out.println( "Unmounting "+mount+"..." );
 				System.out.println(
 					new SystemCommand( "umount "+mount ).output()
 				);
+			}
+		}
+	}
+
+	public void beforeDiskWrite ( String device ) throws Exception {
+		if (device.equals("null")) return; // allow "/dev/null" for testing
+		Tree safeDevicesTree = safeDevicesTree();
+		if (!safeDevicesTree.keys().contains(device)) throw new Exception( device+" is not a safe device" );
+		
+		System.out.println( "Safe Device Tree:\n"+safeDevicesTree.serialize() );
+		
+		umount( safeDevicesTree.get(device) );
+		
+		if (safeDevicesTree.get(device).keys().contains("children")) {
+			for (Tree child : safeDevicesTree.get(device).get("children").branches()) {
+				umount( child );
 			}
 		}
 	}

@@ -53,6 +53,16 @@ public class DuplicationDirectory {
 		}
 	}
 	
+	public String mmcblk0ToDisk ( String disk ) {
+		try {
+			duplicator.mmcblk0ToDisk( disk );
+			return "Copying device mmcblk0 to disk '"+disk+"'...";
+		} catch (Exception e) {
+			e.printStackTrace();
+			return e.getMessage();
+		}
+	}
+	
 	public String diskToFile ( String disk, String file ) {
 		file = new File( directory, file ).getAbsolutePath();
 		try {
@@ -88,19 +98,22 @@ public class DuplicationDirectory {
 		System.out.println( "**********\n"+query+"\n**********" );
 	
 		String statusMessage = "";
-		if (query.containsKey("file") && query.containsKey("device") && query.containsKey("command")) {
-			String file = query.get("file");
-			String device = query.get("device");
-			String command = query.get("command");
-			if (command.equals("fileToDisk")) {
-				statusMessage = fileToDisk( file, device );
-			} else if (command.equals("fileToDiskCopyGz")) {
-				statusMessage = fileToDiskCopyGz( file, device );
-			} else if (command.equals("cancel")) {
-				statusMessage = cancelDisk	(device);
-				System.out.println( "************** CANCELING! **************" );
-			}
+		
+		String file = query.get("file");
+		String device = query.get("device");
+		String command = query.get("command");
+		
+		if (file!=null && device!=null && command!=null && command.equals("fileToDisk")) {
+			statusMessage = fileToDisk( file, device );
+		} else if (file!=null && device!=null && command!=null && command.equals("fileToDiskCopyGz")) {
+			statusMessage = fileToDiskCopyGz( file, device );
+		} else if (device!=null && command!=null && command.equals("mmcblk0ToDisk")) {
+			statusMessage = mmcblk0ToDisk( device );
+		} else if (file!=null && device!=null && command!=null && command.equals("cancel")) {
+			statusMessage = cancelDisk(device);
+			System.out.println( "************** CANCELING! **************" );
 		}
+		
 		return statusMessage;
 	}
 	

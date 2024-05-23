@@ -92,7 +92,7 @@ public class DuplicationStation extends ServerState {
 				
 				// fill in blanks in the TemplateFile
 				biblelocalsdTemplate.replace( "statusMessage", statusMessage );
-				biblelocalsdTemplate.replace( "deviceDivs", duplication.devicesCommandStatusHTML( "biblelocalsd", "biblelocalsd.img.gz", "fileToDiskCopyGz" ) );
+				biblelocalsdTemplate.replace( "deviceDivs", duplication.devicesCommandStatusHTML( "biblelocalsd", "", "mmcblk0ToDisk" ) );
 			
 				// HTTP response
 				session.response(
