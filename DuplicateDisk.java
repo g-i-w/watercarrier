@@ -40,14 +40,9 @@ public class DuplicateDisk {
 		dd( file, "/dev/"+device, "./watercarrier/fileToDisk.sh" );
 	}
 	
-	public void fileToDiskCopyGz ( String file, String device ) throws Exception {
-		beforeDiskWrite( device );
-		dd( file, "/dev/"+device, "./watercarrier/fileToDiskCopyGz.sh" );
-	}
-	
-	public void mmcblk0ToDisk ( String device ) throws Exception {
-		beforeDiskWrite( device );
-		dd( "/dev/mmcblk0", "/dev/"+device );
+	public void diskToDisk ( String input, String output ) throws Exception {
+		beforeDiskWrite( output );
+		dd( "/dev/"+input, "/dev/"+output, "./watercarrier/raw.sh" );
 	}
 	
 	public void umount ( Tree device ) {

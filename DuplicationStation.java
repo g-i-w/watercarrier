@@ -8,7 +8,6 @@ import paddle.*;
 public class DuplicationStation extends ServerState {
 
 	DuplicationDirectory duplication;
-	TemplateFile duplicationTemplate;
 	TemplateFile biblesdTemplate;
 	byte[] biblesdImage;
 	TemplateFile biblelocalsdTemplate;
@@ -16,7 +15,6 @@ public class DuplicationStation extends ServerState {
 
 	public DuplicationStation ( String dir, int port ) throws Exception {
 		duplication = new DuplicationDirectory( dir );
-		duplicationTemplate = new TemplateFile( "watercarrier/duplication.html", "////" );
 		biblesdTemplate = new TemplateFile( "watercarrier/biblesd.html", "////" );
 		biblesdImage = FileActions.readBytes( "watercarrier/biblesd.png" );
 		biblelocalsdTemplate = new TemplateFile( "watercarrier/biblelocalsd.html", "////" );
@@ -38,28 +36,7 @@ public class DuplicationStation extends ServerState {
 			InboundHTTP session = (InboundHTTP)c;
 			
 			// check path
-			if (session.request().path().equals("/duplication")) {
-			
-				// process the query key=value data				
-				String statusMessage = duplication.processQuery( session.request().query() );
-				
-				// fill in blanks in the TemplateFile
-				duplicationTemplate
-					.replace( "filesTable", duplication.filesHTML() )
-					.replace( "devicesTable", duplication.devicesHTML() )
-					.replace( "statusTable", duplication.statusHTML() )
-					.replace( "statusMessage", statusMessage )
-				;
-			
-				// HTTP response
-				session.response(
-					new ResponseHTTP(
-						new String[]{ "Content-Type", "text/html" },
-						duplicationTemplate.toString()
-					)
-				);
-				
-			} else if (session.request().path().equals("/biblesd")) {
+			if (session.request().path().equals("/biblesd")) {
 			
 				// process the query key=value data
 				session.request().query().put( "file", "biblesd.img.gz" );
@@ -67,7 +44,7 @@ public class DuplicationStation extends ServerState {
 				
 				// fill in blanks in the TemplateFile
 				biblesdTemplate.replace( "statusMessage", statusMessage );
-				biblesdTemplate.replace( "deviceDivs", duplication.devicesCommandStatusHTML( "biblesd", "biblesd.img.gz", "fileToDisk" ) );
+				biblesdTemplate.replace( "deviceDivs", duplication.devicesCommandStatusHTML( "biblesd", "mmcblk0p3", "diskToDisk" ) );
 			
 				// HTTP response
 				session.response(
@@ -92,7 +69,7 @@ public class DuplicationStation extends ServerState {
 				
 				// fill in blanks in the TemplateFile
 				biblelocalsdTemplate.replace( "statusMessage", statusMessage );
-				biblelocalsdTemplate.replace( "deviceDivs", duplication.devicesCommandStatusHTML( "biblelocalsd", "", "mmcblk0ToDisk" ) );
+				biblelocalsdTemplate.replace( "deviceDivs", duplication.devicesCommandStatusHTML( "biblelocalsd", "mmcblk0", "diskToDisk" ) );
 			
 				// HTTP response
 				session.response(

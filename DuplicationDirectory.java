@@ -42,21 +42,10 @@ public class DuplicationDirectory {
 		}
 	}
 	
-	public String fileToDiskCopyGz ( String file, String disk ) {
-		file = new File( directory, file ).getAbsolutePath();
+	public String diskToDisk ( String input, String output ) {
 		try {
-			duplicator.fileToDiskCopyGz( file, disk );
-			return "Writing '"+file+"' to '"+disk+"', then will mount and copy to same directory...";
-		} catch (Exception e) {
-			e.printStackTrace();
-			return e.getMessage();
-		}
-	}
-	
-	public String mmcblk0ToDisk ( String disk ) {
-		try {
-			duplicator.mmcblk0ToDisk( disk );
-			return "Copying device mmcblk0 to disk '"+disk+"'...";
+			duplicator.diskToDisk( input, output );
+			return "Copying '"+input+" to '"+output+"'...";
 		} catch (Exception e) {
 			e.printStackTrace();
 			return e.getMessage();
@@ -99,19 +88,19 @@ public class DuplicationDirectory {
 	
 		String statusMessage = "";
 		
-		String file = query.get("file");
-		String device = query.get("device");
+		String input = query.get("input");
+		String output = query.get("output");
 		String command = query.get("command");
 		
-		if (file!=null && device!=null && command!=null && command.equals("fileToDisk")) {
-			statusMessage = fileToDisk( file, device );
-		} else if (file!=null && device!=null && command!=null && command.equals("fileToDiskCopyGz")) {
-			statusMessage = fileToDiskCopyGz( file, device );
-		} else if (device!=null && command!=null && command.equals("mmcblk0ToDisk")) {
-			statusMessage = mmcblk0ToDisk( device );
-		} else if (file!=null && device!=null && command!=null && command.equals("cancel")) {
-			statusMessage = cancelDisk(device);
-			System.out.println( "************** CANCELING! **************" );
+		if (input!=null && output!=null && command!=null && command.equals("diskToDisk")) {
+			statusMessage = diskToDisk( input, output );
+		} else if (input!=null && output!=null && command!=null && command.equals("fileToDisk")) {
+			statusMessage = fileToDisk( input, output );
+		} else if (input!=null && output!=null && command!=null && command.equals("diskToFile")) {
+			statusMessage = diskToFile( input, output );
+		} else if (output!=null && command!=null && command.equals("cancel")) {
+			statusMessage = cancelDisk( output );
+			System.out.println( "************** CANCELING "+output+" **************" );
 		}
 		
 		return statusMessage;
@@ -157,19 +146,19 @@ public class DuplicationDirectory {
 		return Tables.html( deviceTable );
 	}
 	
-	public String devicesCommandStatusHTML ( String baseURL, String fileName, String startCommand ) {
+	public String devicesCommandStatusHTML ( String baseURL, String input, String startCommand ) {
 		StringBuilder html = new StringBuilder();
 		for (Map.Entry<String,String> entry : duplicator.safeDevicesInfo().entrySet()) {
 			String device = entry.getKey();
 			String info = entry.getValue();
-			String link = "<a href=\""+baseURL+"?file="+fileName+"&device="+device+"&command="+startCommand+"\">Start</a>";
+			String link = "<a href=\""+baseURL+"?input="+input+"&output="+device+"&command="+startCommand+"\">Start</a>";
 			String output = duplicator.processOutput( device );
 			int val = duplicator.processStatus( device );
 			String status;
 			switch (val) {
 				case 1:
 					status = "Writing...";
-					link = "<a href=\""+baseURL+"?file="+fileName+"&device="+device+"&command=cancel\">Cancel</a>";
+					link = "<a href=\""+baseURL+"?input="+input+"&output="+device+"&command=cancel\">Cancel</a>";
 					break;
 				case 2:
 					status = "<span style=\"background-color:rgb(255,200,200);\">Canceled</span>";
