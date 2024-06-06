@@ -1,0 +1,12 @@
+[Unit]
+Description=Bible.Local Server Configuration
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/servant
+ExecStart=java watercarrier.Configuration 8000
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

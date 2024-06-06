@@ -30,21 +30,21 @@ public class DuplicationStation extends ServerState {
 	}
 	
 	public void received ( Connection c ) {
-		//print( c );
+		super.received( c );
 		if (c instanceof InboundHTTP) {
 			// convert type to InboundHTTP
 			InboundHTTP session = (InboundHTTP)c;
+			System.out.println( session.request().path()+" "+session.request().query() );
 			
 			// check path
 			if (session.request().path().equals("/biblesd")) {
 			
 				// process the query key=value data
-				session.request().query().put( "file", "biblesd.img.gz" );
 				String statusMessage = duplication.processQuery( session.request().query() );
 				
 				// fill in blanks in the TemplateFile
 				biblesdTemplate.replace( "statusMessage", statusMessage );
-				biblesdTemplate.replace( "deviceDivs", duplication.devicesCommandStatusHTML( "biblesd", "mmcblk0p3", "diskToDisk" ) );
+				biblesdTemplate.replace( "deviceDivs", duplication.devicesHTML( "biblesd", "biblesd.img.gz", "fileToDisk" ) );
 			
 				// HTTP response
 				session.response(
@@ -64,12 +64,11 @@ public class DuplicationStation extends ServerState {
 			} else if (session.request().path().equals("/biblelocalsd")) {
 			
 				// process the query key=value data
-				session.request().query().put( "file", "biblelocalsd.img.gz" );
 				String statusMessage = duplication.processQuery( session.request().query() );
 				
 				// fill in blanks in the TemplateFile
 				biblelocalsdTemplate.replace( "statusMessage", statusMessage );
-				biblelocalsdTemplate.replace( "deviceDivs", duplication.devicesCommandStatusHTML( "biblelocalsd", "mmcblk0", "diskToDisk" ) );
+				biblelocalsdTemplate.replace( "deviceDivs", duplication.devicesHTML( "biblelocalsd", "mmcblk0", "diskToDisk" ) );
 			
 				// HTTP response
 				session.response(
@@ -102,10 +101,6 @@ public class DuplicationStation extends ServerState {
 		}
 	}
 	
-	public void transmitted ( Connection c ) {
-	// do nothing
-	}
-
 	public static void main ( String[] args ) throws Exception {
 		DuplicationStation ds = new DuplicationStation( args[0], Integer.parseInt(args[1]) );
 	}

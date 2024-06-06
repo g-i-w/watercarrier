@@ -84,7 +84,7 @@ public class DuplicationDirectory {
 	// INPUT: query map
 	
 	public String processQuery ( Map<String,String> query ) {
-		System.out.println( "**********\n"+query+"\n**********" );
+		//System.out.println( "**********\n"+query+"\n**********" );
 	
 		String statusMessage = "";
 		
@@ -131,22 +131,7 @@ public class DuplicationDirectory {
 		return Tables.html(table);
 	}
 	
-	public String devicesHTML () {
-		Table deviceTable = new SimpleTable();
-		deviceTable.append( new String[]{ "", "Device", "Size" } );
-		for (Map.Entry<String,String> entry : duplicator.safeDevicesInfo().entrySet()) {
-			String device = entry.getKey();
-			String info = entry.getValue();
-			deviceTable.append( new String[]{
-				"<input type=\"radio\" name=\"device\" value=\""+device+"\">",
-				device,
-				info
-			});
-		}
-		return Tables.html( deviceTable );
-	}
-	
-	public String devicesCommandStatusHTML ( String baseURL, String input, String startCommand ) {
+	public String devicesHTML ( String baseURL, String input, String startCommand ) {
 		StringBuilder html = new StringBuilder();
 		for (Map.Entry<String,String> entry : duplicator.safeDevicesInfo().entrySet()) {
 			String device = entry.getKey();

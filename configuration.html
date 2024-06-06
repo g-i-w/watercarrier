@@ -1,0 +1,73 @@
+<html>
+<head>
+
+<title>Bible.Local Configuration</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<!--<meta http-equiv="refresh" content="4" />-->
+
+<style>
+body {
+	font-family:sans-serif;
+}
+div {
+	display:inline-block;
+	margin:4px 8px 4px 8px;
+	padding:2px 4px 2px 4px;
+	border-radius:4px;
+}
+a {
+	text-decoration:none;
+	font-weight:bold;
+	color:white;
+}
+a:hover {
+	text-decoration:underline;
+}
+.error {
+	color:rgb(255,150,150);
+	background-color:black;
+        font-family:monospace;
+        background-color:black;
+}
+.ok {
+	color:rgb(150,255,150);
+	background-color:black;
+        font-family:monospace;
+        background-color:black;
+}
+</style>
+
+</head>
+
+<body onload="window.history.pushState( {}, document.title, '/' );">
+
+	<form>
+	<h3>Server password:</h3>
+	<table>
+		<tr><td>Current:</td><td><input type="password" name="old"></td></tr>
+		<tr><td>New:</td><td><input type="password" name="new"></td></tr>
+	</table>
+	<br>
+	<input type="submit" value="Update server password">
+	<br><br>
+	////password-status////
+	</form>
+	
+	<br>
+	
+	<form action"/">
+	<h3>WiFi settings:</h3>
+	<table>
+		<tr><td>WiFi SSID:</td><td><input type="text"value="////wifi-ssid////" name="wifi-ssid"></td></tr>
+		<tr><td>WiFi password:</td><td><input type="text" value="////wifi-password////" name="wifi-password"></td></tr>
+		<tr><td>Server password:</td><td><input type="password" name="p"></td></tr>
+	</table>
+	<br>
+	<input type="submit" value="Change WiFi settings">
+	<br><br>
+	////wifi-status////
+	</form>
+	
+</body>
+</html>
+

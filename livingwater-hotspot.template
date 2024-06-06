@@ -1,0 +1,11 @@
+[Unit]
+Description=Living-Water hotspot
+
+[Service]
+ExecStart=nmcli device wifi hotspot ssid ////wifi-ssid//// password ////wifi-password////
+Type=simple
+Restart=on-failure
+RestartSec=4s
+
+[Install]
+WantedBy=multi-user.target
