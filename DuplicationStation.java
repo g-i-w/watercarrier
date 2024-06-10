@@ -9,16 +9,12 @@ public class DuplicationStation extends ServerState {
 
 	DuplicationDirectory duplication;
 	TemplateFile biblesdTemplate;
-	byte[] biblesdImage;
 	TemplateFile biblelocalsdTemplate;
-	//byte[] biblelocalsdImage;
 
 	public DuplicationStation ( String dir, int port ) throws Exception {
 		duplication = new DuplicationDirectory( dir );
 		biblesdTemplate = new TemplateFile( "watercarrier/biblesd.html", "////" );
-		biblesdImage = FileActions.readBytes( "watercarrier/biblesd.png" );
 		biblelocalsdTemplate = new TemplateFile( "watercarrier/biblelocalsd.html", "////" );
-		//biblelocalsdImage = FileActions.readBytes( "watercarrier/biblelocalsd.png" );
 		ServerHTTP server = new ServerHTTP (
 			this,
 			port,
@@ -54,13 +50,6 @@ public class DuplicationStation extends ServerState {
 					)
 				);
 				
-			} else if (session.request().path().equals("/biblesd.png")) {
-				session.response(
-					new ResponseHTTP(
-						new String[]{ "Content-Type", "image/png" },
-						biblesdImage
-					)
-				);
 			} else if (session.request().path().equals("/biblelocalsd")) {
 			
 				// process the query key=value data
@@ -78,13 +67,6 @@ public class DuplicationStation extends ServerState {
 					)
 				);
 				
-			} else if (session.request().path().equals("/biblelocalsd.png")) {
-				/*session.response(
-					new ResponseHTTP(
-						new String[]{ "Content-Type", "image/png" },
-						biblelocalsdImage
-					)
-				);*/
 			} else {
 				session.response(
 					new ResponseHTTP( "not found" )
