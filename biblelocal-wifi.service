@@ -1,0 +1,11 @@
+[Unit]
+Description=Bible.Local WiFi
+
+[Service]
+ExecStart=nmcli device wifi hotspot ssid Living-Water password John4-14
+Type=simple
+Restart=on-failure
+RestartSec=4s
+
+[Install]
+WantedBy=multi-user.target

@@ -7,14 +7,17 @@ import paddle.*;
 
 public class Configuration extends ServerState {
 
-	TemplateFile livingwater;
-	String livingwaterServicePath = "/etc/systemd/system/livingwater-hotspot.service";
-	//String livingwaterServicePath = "watercarrier/livingwater-hotspot.service"; //testing
+	TemplateFile livingwater; // systemd unit template
+
+	//String livingwaterServicePath = "/etc/systemd/system/biblelocal-wifi.service";
+	String livingwaterServicePath = "watercarrier/biblelocal-wifi.service"; //testing
 	
-	TemplateFile configuration;
-	String changePasswordScript = "./watercarrier/changePassword.sh";
+	TemplateFile configuration; // HTML template
+
 	String checkPasswordScript = "./watercarrier/checkPassword.sh";
-	//String changePasswordScript = "./watercarrier/changePassword-dummy.sh"; //testing
+
+	//String changePasswordScript = "./watercarrier/changePassword.sh";
+	String changePasswordScript = "./watercarrier/changePassword-dummy.sh"; //testing
 	
 	private boolean something ( Map<String,String> map, String str ) {
 		return map.get(str)!=null && !map.get(str).equals("");
@@ -42,14 +45,14 @@ public class Configuration extends ServerState {
 	}
 
 	public Configuration ( int port ) throws Exception {
-		livingwater = new TemplateFile( "watercarrier/livingwater-hotspot.template", "////" );
+		livingwater = new TemplateFile( "watercarrier/biblelocal-wifi.template", "////" );
 		configuration = new TemplateFile( "watercarrier/configuration.html", "////" );
 		blankStatus();
 		updateLivingwater();
 		ServerHTTP server = new ServerHTTP (
 			this,
 			port,
-			"Configuration Server",
+			"Bible.Local configuration server",
 			1024,
 			4000
 		);
@@ -102,11 +105,11 @@ public class Configuration extends ServerState {
                                                 FileActions.write( livingwaterServicePath, livingwater.toString() );
                                                 System.err.println( new SystemCommand( "systemctl daemon-reload" ).output() );
 
-						SystemCommand restartCmd = new SystemCommand( "systemctl restart livingwater-hotspot.service" );
+						SystemCommand restartCmd = new SystemCommand( "systemctl restart biblelocal-wifi.service" );
 						System.err.println( restartCmd.output() );
 						status += "<br>"+( restartCmd.exitValue()==0 ? "<div class=ok>Done.</div>" : "<div class=error>Error while restarting:</div><br>"+restartCmd.output() );
 
-						System.err.println( new SystemCommand( "systemctl status livingwater-hotspot.service" ).output() );
+						System.err.println( new SystemCommand( "systemctl status biblelocal-wifi.service" ).output() );
 						
 						updateLivingwater();
 						

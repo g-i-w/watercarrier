@@ -23,11 +23,11 @@ public class DuplicationStation extends ServerState {
 	public DuplicationStation ( String path, int port ) throws Exception {
 		biblesdPath = path;
 		duplicator = new DuplicateDisk();
-		biblelocalTemplate = new TemplateFile( "watercarrier/biblelocal.html", "////" );
+		biblelocalTemplate = new TemplateFile( "watercarrier/biblelocal-duplication.html", "////" );
 		ServerHTTP server = new ServerHTTP (
 			this,
 			port,
-			"DuplicationStation Server",
+			"Bible.Local duplication server",
 			1024,
 			4000
 		);
