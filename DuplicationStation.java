@@ -7,14 +7,23 @@ import paddle.*;
 
 public class DuplicationStation extends ServerState {
 
-	DuplicationDirectory duplication;
-	TemplateFile biblesdTemplate;
-	TemplateFile biblelocalsdTemplate;
+	String biblesdPath;
+	DuplicateDisk duplicator;
+	TemplateFile biblelocalTemplate;
+	
+	private String val ( Tree unknown ) {
+		if (unknown==null) return "";
+		else return unknown.value();
+	}
+	
+	private String nonNull ( Object obj ) {
+		return ( obj!=null ? obj.toString() : "" );
+	}
 
-	public DuplicationStation ( String dir, int port ) throws Exception {
-		duplication = new DuplicationDirectory( dir );
-		biblesdTemplate = new TemplateFile( "watercarrier/biblesd.html", "////" );
-		biblelocalsdTemplate = new TemplateFile( "watercarrier/biblelocalsd.html", "////" );
+	public DuplicationStation ( String path, int port ) throws Exception {
+		biblesdPath = path;
+		duplicator = new DuplicateDisk();
+		biblelocalTemplate = new TemplateFile( "watercarrier/biblelocal.html", "////" );
 		ServerHTTP server = new ServerHTTP (
 			this,
 			port,
@@ -25,6 +34,93 @@ public class DuplicationStation extends ServerState {
 		while( server.starting() ) Thread.sleep(1);
 	}
 	
+	public String processQuery ( Map<String,String> query ) {
+		//System.out.println( "**********\n"+query+"\n**********" );
+	
+		String statusMessage = "";
+		
+		String input = query.get("input");
+		String output = query.get("output");
+		String command = query.get("command");
+		
+		if ( output!=null && command!=null ) {
+			if (command.equals("createBibleSD")) {
+				statusMessage = duplicator.fileToDisk( biblesdPath, output, "BibleSD media" );
+			} else if (command.equals("createBibleLocal")) {
+				statusMessage = duplicator.diskToDisk( "/dev/mmcblk0", output, "Bible.Local boot media" );
+			} else if (command.equals("cancel")) {
+				duplicator.cancel( output );
+				System.out.println( "************** CANCELING "+output+" **************" );
+			}
+		}
+		
+		return statusMessage;
+	}
+
+	public String devicesHTML () {
+		StringBuilder html = new StringBuilder();
+		Tree statusTree = duplicator.statusTree();
+		for (String device : statusTree.keys()) {
+			Tree branch = statusTree.get(device);
+
+			String size = val(branch.get("size"));
+			Double gibMedia = 0.0;
+			if (!size.equals("")) gibMedia = Double.valueOf( size.substring(0, size.length()-1) );
+			String gbMediaStr = String.format("%.1f", (gibMedia*1.074))+" GB";
+
+			String status = val(branch.get("status"));
+			String link = "";
+			String label = val(branch.get("label"));
+			String output = val(branch.get("output"));
+			String progressBar = "";
+			String statusStr = "";
+			
+			if (status.equals("Writing")) {
+				Double bMedia = gibMedia*Math.pow(1024,3);
+				String progress = Regex.first( output, "(\\d+)\\s+bytes" );
+				if (progress!=null) {
+					progressBar = "<progress max=\""+bMedia+"\" value=\""+progress+"\">"+progress+" bytes</progress>";
+				}
+				link =
+					"<div class=\"device cancel\"><a href=\"?output="+device+"&command=cancel\">Cancel</a></div>";
+			} else {
+				if (gibMedia > 0.0) {
+					link = (
+						gibMedia < 59.0 ? // minimum capacity for Bible.Local
+						"<div class=\"device biblesd\"><a href=\"?output="+device+"&command=createBibleSD\">BibleSD</a></div>"
+						:
+						"<div class=\"device biblelocalsd\"><a href=\"?output="+device+"&command=createBibleLocal\">Bible.Local</a></div>"
+					);
+				}
+			}
+			
+			if (!status.equals("")) {
+				statusStr = status;
+				if (status.equals("Complete")) statusStr = "<span style=\"background-color:lightgreen;\">Complete</span>";
+				if (status.equals("Canceled")) statusStr = "<span style=\"background-color:rgb(255,200,200);\">Canceled</span>";
+				html
+					.append( "<div class=\"device\">" )
+					.append( "<div class=\"device name\">"+val(branch.get("name"))+"</div>" )
+					.append( "<div class=\"device size\">"+gbMediaStr+"</div>" )
+					.append( link )
+					.append( "<div class=\"device label\">"+statusStr+": "+label+"</div>" )
+					.append( "<div>"+progressBar+"</div>" )
+					.append( "<div class=\"device text\">"+output+"</div>" )
+					.append( "</div>" )
+				;
+			} else {
+				html
+					.append( "<div class=\"device\">" )
+					.append( "<div class=\"device name\">"+branch.get("name")+"</div>" )
+					.append( "<div class=\"device size\">"+gbMediaStr+"</div>" )
+					.append( link )
+					.append( "</div>" )
+				;
+			}
+		}
+		return html.toString();
+	}
+	
 	public void received ( Connection c ) {
 		super.received( c );
 		if (c instanceof InboundHTTP) {
@@ -33,37 +129,17 @@ public class DuplicationStation extends ServerState {
 			System.out.println( session.request().path()+" "+session.request().query() );
 			
 			// check path
-			if (session.request().path().equals("/biblesd")) {
+			if (session.request().path().equals("/")) {
 			
-				// process the query key=value data
-				String statusMessage = duplication.processQuery( session.request().query() );
-				
 				// fill in blanks in the TemplateFile
-				biblesdTemplate.replace( "statusMessage", statusMessage );
-				biblesdTemplate.replace( "deviceDivs", duplication.devicesHTML( "biblesd", "biblesd.img.gz", "fileToDisk" ) );
+				biblelocalTemplate.replace( "statusMessage", processQuery( session.request().query() ) );
+				biblelocalTemplate.replace( "deviceDivs", devicesHTML() );
 			
 				// HTTP response
 				session.response(
 					new ResponseHTTP(
 						new String[]{ "Content-Type", "text/html" },
-						biblesdTemplate.toString()
-					)
-				);
-				
-			} else if (session.request().path().equals("/biblelocalsd")) {
-			
-				// process the query key=value data
-				String statusMessage = duplication.processQuery( session.request().query() );
-				
-				// fill in blanks in the TemplateFile
-				biblelocalsdTemplate.replace( "statusMessage", statusMessage );
-				biblelocalsdTemplate.replace( "deviceDivs", duplication.devicesHTML( "biblelocalsd", "mmcblk0", "diskToDisk" ) );
-			
-				// HTTP response
-				session.response(
-					new ResponseHTTP(
-						new String[]{ "Content-Type", "text/html" },
-						biblelocalsdTemplate.toString()
+						biblelocalTemplate.toString()
 					)
 				);
 				
@@ -72,14 +148,6 @@ public class DuplicationStation extends ServerState {
 					new ResponseHTTP( "not found" )
 				);
 			}
-			
-		} else if (c instanceof OutboundHTTP) {
-			OutboundHTTP session = (OutboundHTTP)c;
-			/*System.out.println(
-				"----\nResponse:\n\n"+
-				(new String(session.response().data()))+
-				"\n----"
-			);*/
 		}
 	}
 	

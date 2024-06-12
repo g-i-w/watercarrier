@@ -1,16 +1,16 @@
 <html>
 <head>
 
-<title>BibleSD Duplication</title>
+<title>Duplication</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<!--<meta http-equiv="refresh" content="4" />-->
+<meta http-equiv="refresh" content="3; URL=/">
 
 <style>
 body {
 	font-family:sans-serif;
 }
 div {
-	max-width:300px;
+	/*max-width:300px;*/
 	display:inline-block;
 	margin:4px 8px 4px 8px;
 	padding:2px 4px 2px 4px;
@@ -21,17 +21,26 @@ div {
 .name {
 	font-weight:bold;
 }
-.info {
+.size {
 
 }
-.command {
-	background-color:gray;
-}
-.status {
+.label {
 
 }
 .text {
 
+}
+.command {
+	background-color:darkgray;
+}
+.biblesd {
+	background-color:darkgreen;
+}
+.biblelocalsd {
+	background-color:darkblue;
+}
+.cancel {
+	background-color:rgb(255,49,49);
 }
 a {
 	text-decoration:none;
@@ -46,11 +55,9 @@ a:hover {
 </head>
 
 <body>
-<!-- <body onload="window.history.pushState( {}, document.title, '/biblesd' );"> -->
 
-	<h3>Create BibleSD cards</h3>
 	<br>
-	<div class="command"><a href="/biblesd">Refresh Device List</span></a></div>
+	<div class="command"><a href="/">Refresh Device List</span></a></div>
 	<br>
 	<div>////statusMessage////</div>
 	<br>
