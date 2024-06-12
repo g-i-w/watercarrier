@@ -9,15 +9,15 @@ public class Configuration extends ServerState {
 
 	TemplateFile livingwater; // systemd unit template
 
-	//String livingwaterServicePath = "/etc/systemd/system/biblelocal-wifi.service";
-	String livingwaterServicePath = "watercarrier/biblelocal-wifi.service"; //testing
+	String livingwaterServicePath = "/etc/systemd/system/biblelocal-wifi.service";
+	//String livingwaterServicePath = "watercarrier/biblelocal-wifi.service"; //testing
 	
 	TemplateFile configuration; // HTML template
 
 	String checkPasswordScript = "./watercarrier/checkPassword.sh";
 
-	//String changePasswordScript = "./watercarrier/changePassword.sh";
-	String changePasswordScript = "./watercarrier/changePassword-dummy.sh"; //testing
+	String changePasswordScript = "./watercarrier/changePassword.sh";
+	//String changePasswordScript = "./watercarrier/changePassword-dummy.sh"; //testing
 	
 	private boolean something ( Map<String,String> map, String str ) {
 		return map.get(str)!=null && !map.get(str).equals("");
