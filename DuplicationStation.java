@@ -85,12 +85,10 @@ public class DuplicationStation extends ServerState {
 					"<div class=\"device cancel\"><a href=\"?output="+device+"&command=cancel\">Cancel</a></div>";
 			} else {
 				if (gibMedia > 0.0) {
-					link = (
-						gibMedia < 59.0 ? // minimum capacity for Bible.Local
-						"<div class=\"device biblesd\"><a href=\"?output="+device+"&command=createBibleSD\">BibleSD</a></div>"
-						:
-						"<div class=\"device biblelocalsd\"><a href=\"?output="+device+"&command=createBibleLocal\">Bible.Local</a></div>"
-					);
+					if (gibMedia > 36.7) { // minimum capacity for possible copy of Bible.Local
+						link += "<div class=\"device biblelocalsd\"><a href=\"?output="+device+"&command=createBibleLocal\">Bible.Local</a></div>";
+					}
+					link += "<div class=\"device biblesd\"><a href=\"?output="+device+"&command=createBibleSD\">BibleSD</a></div>";
 				}
 			}
 			
@@ -117,6 +115,8 @@ public class DuplicationStation extends ServerState {
 					.append( "</div>" )
 				;
 			}
+
+			html.append( "<br>" );
 		}
 		return html.toString();
 	}
