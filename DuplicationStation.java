@@ -20,9 +20,9 @@ public class DuplicationStation extends ServerState {
 		return ( obj!=null ? obj.toString() : "" );
 	}
 
-	public DuplicationStation ( String path, int port ) throws Exception {
-		biblesdPath = path;
-		duplicator = new DuplicateDisk();
+	public DuplicationStation ( String bootDisk, String biblesdPath, int port ) throws Exception {
+		this.biblesdPath = biblesdPath;
+		duplicator = new DuplicateDisk( bootDisk );
 		biblelocalTemplate = new TemplateFile( "watercarrier/biblelocal-duplication.html", "////" );
 		ServerHTTP server = new ServerHTTP (
 			this,
@@ -152,7 +152,7 @@ public class DuplicationStation extends ServerState {
 	}
 	
 	public static void main ( String[] args ) throws Exception {
-		DuplicationStation ds = new DuplicationStation( args[0], Integer.parseInt(args[1]) );
+		DuplicationStation ds = new DuplicationStation( args[0], args[1], Integer.parseInt(args[2]) );
 	}
 
 }

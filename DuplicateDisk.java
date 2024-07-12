@@ -10,6 +10,7 @@ public class DuplicateDisk {
 
 	private SenseDevice devices;
 	private Map<String,SystemCommand> processes;
+	private String bootDisk;
 
 	private String checkPath ( String path ) throws Exception {
 		File file = new File( path );
@@ -22,12 +23,13 @@ public class DuplicateDisk {
 	
 	
 	public DuplicateDisk () {
-		this( new SenseDevice() );
+		processes = new LinkedHashMap<>();
+		devices = new SenseDevice();
 	}
 
-	public DuplicateDisk ( SenseDevice sd ) {
-		processes = new LinkedHashMap<>();
-		devices = sd;
+	public DuplicateDisk ( String bootDisk ) {
+		this();
+		this.bootDisk = bootDisk;
 	}
 	
 	public String diskToFile ( String device, String file, String label ) {
@@ -123,16 +125,19 @@ public class DuplicateDisk {
 	
 	public Set<String> safeDevices () {
 		Set<String> safe = new TreeSet<>();
-		for (String device : addedDevices()) {
+		for (String device : devices.deviceList()) {
 			if (
-				Regex.exists( device, "^sd[a-z]$" ) ||
-				Regex.exists( device, "^mmcblk[0-9]$" )
-			) safe.add( device );
+				( bootDisk == null || !Regex.exists( device, bootDisk ) ) // NOT the boot disk (or bootDisk is null)
+				&&
+				( Regex.exists( device, "^sd[a-z]$" ) || Regex.exists( device, "^mmcblk[0-9]$" ) ) // IS a safe disk
+			) {
+				safe.add( device );
+			}
 		}
 		return safe;
 	}
 	
-	public Map<String,String> safeDevicesInfo () {
+	/*public Map<String,String> safeDevicesInfo () {
 		Map<String,String> info = new TreeMap<>();
 		Table deviceInfo = devices.deviceInfo();
 		Set<String> safe = safeDevices();
@@ -143,7 +148,7 @@ public class DuplicateDisk {
 			}
 		}
 		return info;
-	}
+	}*/
 	
 	public Tree safeDevicesTree () {
 		Tree deviceTree = devices.deviceTree();
@@ -268,7 +273,7 @@ public class DuplicateDisk {
 		while (true) {
 			if (dd.changed()) {
 				//System.out.println( dd.safeDevicesTree().serialize() );
-				System.out.println( "Devices: "+dd.safeDevicesInfo()+"\nSelect device > " );
+				System.out.println( "Devices: "+dd.safeDevicesTree()+"\nSelect device > " );
 				String input = scanner.nextLine().trim();
 				if (input.equals("q")) break;
 				if (!input.equals("")) {

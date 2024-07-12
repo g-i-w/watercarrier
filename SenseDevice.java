@@ -50,9 +50,9 @@ public class SenseDevice {
 		return removed;
 	}
 	
-	public Table deviceInfo () {
+	/*public Table deviceInfo () {
 		return deviceInfo( addedDevices() );
-	}
+	}*/
 	
 	public Tree deviceTree () {
 		try {
@@ -65,7 +65,7 @@ public class SenseDevice {
 		}
 	}
 
-	public Table deviceInfo ( Set<String> devices ) {
+	/*public Table deviceInfo ( Set<String> devices ) {
 		//System.out.println( devices );
 		Tree deviceTree = deviceTree();
 		if (deviceTree == null) return new SimpleTable();
@@ -77,13 +77,13 @@ public class SenseDevice {
 			}
 		}
 		return new SimpleTable().data( infoTree.paths() );
-	}
+	}*/
 
 	public static void main(String[] args) throws Exception {
 		SenseDevice sd = new SenseDevice();
 		while(true) {
 			if (sd.changed()) {
-				System.out.println( sd.deviceInfo( sd.addedDevices() ) );
+				System.out.println( sd.deviceTree() );
 				System.out.println( "added: "+sd.addedDevices()+", removed: "+sd.removedDevices() );
 				sd.init();
 			}
