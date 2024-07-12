@@ -5,7 +5,7 @@ After=network-online.target
 [Service]
 Type=simple
 WorkingDirectory=/home/servant 
-ExecStart=java watercarrier.DuplicationStation /home/servant/biblesd.img.gz 7000
+ExecStart=java watercarrier.DuplicationStation mmcblk0 /home/servant/biblesd.img.gz 7000
 Restart=on-failure
 
 [Install]

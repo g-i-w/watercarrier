@@ -1,2 +1,1 @@
-dd if=$1 bs=4M status=progress | gzip > $2
-
+dd if=$1 bs=4M status=progress iflag=fullblock | gzip > $2

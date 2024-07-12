@@ -117,6 +117,7 @@ public class DuplicationStation extends ServerState {
 					.append( "</div>" )
 				;
 			}
+			html.append("<br>");
 		}
 		return html.toString();
 	}
