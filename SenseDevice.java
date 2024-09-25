@@ -54,11 +54,21 @@ public class SenseDevice {
 		return deviceInfo( addedDevices() );
 	}*/
 	
-	public Tree deviceTree () {
+	public static Tree deviceTree () {
 		try {
 			return new JSON(
 				(new SystemCommand( "lsblk --json --output name,size,mountpoints" )).output()
 			);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	public static String deviceFromUUID ( String UUID ) {
+		try {
+			String lsOutput = (new SystemCommand( "ls /dev/disk/by-uuid/"+UUID+" -l" )).output();
+			return Regex.first( lsOutput, UUID+"-> \\.\\.\\/\\.\\.\\/(\\w{3})" ); // could return null
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;

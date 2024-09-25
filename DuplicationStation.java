@@ -11,6 +11,8 @@ public class DuplicationStation extends ServerState {
 	DuplicateDisk duplicator;
 	TemplateFile biblelocalTemplate;
 	
+	String bootDisk;
+	
 	private String val ( Tree unknown ) {
 		if (unknown==null) return "";
 		else return unknown.value();
@@ -20,10 +22,12 @@ public class DuplicationStation extends ServerState {
 		return ( obj!=null ? obj.toString() : "" );
 	}
 
-	public DuplicationStation ( String bootDisk, String biblesdPath, int port ) throws Exception {
+	public DuplicationStation ( String bootUUID, String biblesdPath, int port ) throws Exception {
 		this.biblesdPath = biblesdPath;
-		duplicator = new DuplicateDisk( bootDisk );
-		biblelocalTemplate = new TemplateFile( "watercarrier/biblelocal-duplication.html", "////" );
+		this.bootDisk = "/dev/"+SenseDevice.deviceFromUUID( bootUUID );
+		System.out.println( "Boot Disk: "+bootDisk );
+		this.duplicator = new DuplicateDisk();
+		this.biblelocalTemplate = new TemplateFile( "watercarrier/biblelocal-duplication.html", "////" );
 		ServerHTTP server = new ServerHTTP (
 			this,
 			port,
@@ -47,7 +51,9 @@ public class DuplicationStation extends ServerState {
 			if (command.equals("createBibleSD")) {
 				statusMessage = duplicator.fileToDisk( biblesdPath, output, "BibleSD media" );
 			} else if (command.equals("createBibleLocal")) {
-				statusMessage = duplicator.diskToDisk( "/dev/mmcblk0", output, "Bible.Local boot media" );
+				statusMessage = duplicator.diskToDisk( bootDisk, output, "Bible.Local boot media" );
+			/*} else if (command.equals("duplicateDisk") && input==null) {
+				statusMessage = duplicator.diskToDisk( input, output, "Duplicating "+input+" to "+output );*/
 			} else if (command.equals("cancel")) {
 				duplicator.cancel( output );
 				System.out.println( "************** CANCELING "+output+" **************" );

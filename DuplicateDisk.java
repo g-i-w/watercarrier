@@ -124,10 +124,11 @@ public class DuplicateDisk {
 	}
 	
 	public Set<String> safeDevices () {
+		if (bootDisk==null) return addedDevices(); // if no boot disk specified, only allow devices added after boot
 		Set<String> safe = new TreeSet<>();
 		for (String device : devices.deviceList()) {
 			if (
-				( bootDisk == null || !Regex.exists( device, bootDisk ) ) // NOT the boot disk (or bootDisk is null)
+				( !Regex.exists( device, bootDisk ) ) // NOT the boot disk
 				&&
 				( Regex.exists( device, "^sd[a-z]$" ) || Regex.exists( device, "^mmcblk[0-9]$" ) ) // IS a safe disk
 			) {
