@@ -68,7 +68,7 @@ public class SenseDevice {
 	public static String deviceFromUUID ( String UUID ) {
 		try {
 			String lsOutput = (new SystemCommand( "ls /dev/disk/by-uuid/"+UUID+" -l" )).output();
-			return Regex.first( lsOutput, UUID+"-> \\.\\.\\/\\.\\.\\/(\\w{3})" ); // could return null
+			return Regex.first( lsOutput, "\\.\\.\\/\\.\\.\\/(\\w{3})" ); // could return null
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
@@ -99,5 +99,12 @@ public class SenseDevice {
 			}
 			Thread.sleep(1000);
 		}
+	}
+}
+
+class TestUUID {
+	public static void main ( String[] args ) {
+		System.out.println( args[0] );
+		System.out.println( SenseDevice.deviceFromUUID( args[0] ) );
 	}
 }
