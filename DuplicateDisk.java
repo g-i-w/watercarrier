@@ -12,16 +12,6 @@ public class DuplicateDisk {
 	private Map<String,SystemCommand> processes;
 	private String bootDisk;
 
-	private String checkPath ( String path ) throws Exception {
-		File file = new File( path );
-		if (!file.exists()) {
-			System.err.println( "Creating new file at '"+path+"' ..." );
-			file.createNewFile();
-		}
-		return file.getAbsolutePath();
-	}
-	
-	
 	public DuplicateDisk () {
 		processes = new LinkedHashMap<>();
 		devices = new SenseDevice();
@@ -35,7 +25,7 @@ public class DuplicateDisk {
 	public String diskToFile ( String device, String file, String label ) {
 		try {
 			if (!devices.deviceList().contains(device)) throw new Exception( device+" not found" );
-			dd( device, file, "./watercarrier/diskToFile.sh", label );
+			runScript( device, file, "./watercarrier/diskToFile.sh", label );
 			return "Writing disk '"+device+"' to file '"+file+"'...";
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -46,7 +36,7 @@ public class DuplicateDisk {
 	public String fileToDisk ( String file, String device, String label ) {
 		try {
 			beforeDiskWrite( device );
-			dd( file, device, "./watercarrier/fileToDisk.sh", label );
+			runScript( file, device, "./watercarrier/fileToDisk.sh", label );
 			return "Writing file '"+file+"' to disk '"+device+"'...";
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -57,8 +47,19 @@ public class DuplicateDisk {
 	public String diskToDisk ( String input, String output, String label ) {
 		try {
 			beforeDiskWrite( output );
-			dd( input, output, "./watercarrier/raw.sh", label );
+			runScript( input, output, "./watercarrier/raw.sh", label );
 			return "Copying '"+input+" to '"+output+"'...";
+		} catch (Exception e) {
+			e.printStackTrace();
+			return e.getMessage();
+		}
+	}
+	
+	public String directoryToDisk ( String dir, String device, String label ) {
+		try {
+			beforeDiskWrite( device );
+			runScript( dir, device, "./watercarrier/directoryToDisk.sh", label );
+			return "Synchronizing '"+dir+"' to '"+device+"'...";
 		} catch (Exception e) {
 			e.printStackTrace();
 			return e.getMessage();
@@ -93,14 +94,12 @@ public class DuplicateDisk {
 	}
 	
 	public void dd ( String in, String out ) throws Exception {
-		dd( in, out, "./watercarrier/raw.sh", "IN: "+in+", OUT: "+out );
+		runScript( in, out, "./watercarrier/raw.sh", "IN: "+in+", OUT: "+out );
 	}
 
-	public void dd ( String in, String out, String script, String label ) throws Exception {
-		if (processes.keySet().contains(out) && !processes.get(out).finished()) throw new Exception( out+" is busy" );
+	public void runScript ( String input, String output, String script, String label ) throws Exception {
 		
-		String input = checkPath( in );
-		String output = checkPath( out );
+		if (processes.keySet().contains(output) && !processes.get(output).finished()) throw new Exception( output+" is busy" );
 		
 		String command = script+" "+input+" "+output;
 		

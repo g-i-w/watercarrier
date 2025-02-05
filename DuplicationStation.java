@@ -8,6 +8,7 @@ import paddle.*;
 public class DuplicationStation extends ServerState {
 
 	String biblesdPath;
+	String raptureKitPath;
 	DuplicateDisk duplicator;
 	TemplateFile biblelocalTemplate;
 	
@@ -22,8 +23,9 @@ public class DuplicationStation extends ServerState {
 		return ( obj!=null ? obj.toString() : "" );
 	}
 
-	public DuplicationStation ( String bootUUID, String biblesdPath, int port ) throws Exception {
+	public DuplicationStation ( String bootUUID, String biblesdPath, String raptureKitPath, int port ) throws Exception {
 		this.biblesdPath = biblesdPath;
+		this.raptureKitPath = raptureKitPath;
 		this.bootDisk = "/dev/"+SenseDevice.deviceFromUUID( bootUUID );
 		System.out.println( "Boot Disk: "+bootDisk );
 		this.duplicator = new DuplicateDisk();
@@ -49,11 +51,12 @@ public class DuplicationStation extends ServerState {
 		
 		if ( output!=null && command!=null ) {
 			if (command.equals("createBibleSD")) {
-				statusMessage = duplicator.fileToDisk( biblesdPath, output, "BibleSD media" );
+				//statusMessage = duplicator.fileToDisk( biblesdPath, output, "BibleSD media -> "+output );
+				statusMessage = duplicator.directoryToDisk( biblesdPath, output, "BibleSD content -> "+output );
 			} else if (command.equals("createBibleLocal")) {
-				statusMessage = duplicator.diskToDisk( bootDisk, output, "Bible.Local boot media" );
-			/*} else if (command.equals("duplicateDisk") && input==null) {
-				statusMessage = duplicator.diskToDisk( input, output, "Duplicating "+input+" to "+output );*/
+				statusMessage = duplicator.diskToDisk( bootDisk, output, "Bible.Local boot media -> "+output );
+			} else if (command.equals("createRaptureKit")) {
+				statusMessage = duplicator.directoryToDisk( raptureKitPath, output, "RaptureKit content -> "+output );
 			} else if (command.equals("cancel")) {
 				duplicator.cancel( output );
 				System.out.println( "************** CANCELING "+output+" **************" );
@@ -83,7 +86,7 @@ public class DuplicationStation extends ServerState {
 			
 			if (status.equals("Writing")) {
 				Double bMedia = gibMedia*Math.pow(1024,3);
-				String progress = Regex.first( output, "(\\d+)\\s+bytes" );
+				String progress = Regex.first( output, "([\\d,]+)\\s+bytes" );
 				if (progress!=null) {
 					progressBar = "<progress max=\""+bMedia+"\" value=\""+progress+"\">"+progress+" bytes</progress>";
 				}
@@ -91,10 +94,11 @@ public class DuplicationStation extends ServerState {
 					"<div class=\"device cancel\"><a href=\"?output="+device+"&command=cancel\">Cancel</a></div>";
 			} else {
 				if (gibMedia > 0.0) {
+					link += "<div class=\"device rapturekit\"><a href=\"?output="+device+"&command=createRaptureKit\">RaptureKit</a></div>";
+					link += "<div class=\"device biblesd\"><a href=\"?output="+device+"&command=createBibleSD\">Bibles</a></div>";
 					if (gibMedia > 36.7) { // minimum capacity for possible copy of Bible.Local
-						link += "<div class=\"device biblelocalsd\"><a href=\"?output="+device+"&command=createBibleLocal\">Bible.Local</a></div>";
+						link += "<div class=\"device biblelocalsd\"><a href=\"?output="+device+"&command=createBibleLocal\">Bible.Local Server</a></div>";
 					}
-					link += "<div class=\"device biblesd\"><a href=\"?output="+device+"&command=createBibleSD\">BibleSD</a></div>";
 				}
 			}
 			
@@ -157,7 +161,7 @@ public class DuplicationStation extends ServerState {
 	}
 	
 	public static void main ( String[] args ) throws Exception {
-		DuplicationStation ds = new DuplicationStation( args[0], args[1], Integer.parseInt(args[2]) );
+		DuplicationStation ds = new DuplicationStation( args[0], args[1], args[2], Integer.parseInt(args[3]) );
 	}
 
 }
