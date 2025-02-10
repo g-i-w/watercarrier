@@ -26,7 +26,7 @@ public class DuplicateDisk {
 		try {
 			if (!devices.deviceList().contains(device)) throw new Exception( device+" not found" );
 			runScript( device, file, "./watercarrier/diskToFile.sh", label );
-			return "Writing disk '"+device+"' to file '"+file+"'...";
+			return "Writing disk "+device+" to file "+file;
 		} catch (Exception e) {
 			e.printStackTrace();
 			return e.getMessage();
@@ -37,7 +37,7 @@ public class DuplicateDisk {
 		try {
 			safeUnmount( device );
 			runScript( file, device, "./watercarrier/fileToDisk.sh", label );
-			return "Writing file '"+file+"' to disk '"+device+"'...";
+			return "Writing file "+file+" to disk "+device;
 		} catch (Exception e) {
 			e.printStackTrace();
 			return e.getMessage();
@@ -48,7 +48,7 @@ public class DuplicateDisk {
 		try {
 			safeUnmount( output );
 			runScript( input, output, "./watercarrier/raw.sh", label );
-			return "Copying '"+input+" to '"+output+"'...";
+			return "Copying disk "+input+" to disk "+output;
 		} catch (Exception e) {
 			e.printStackTrace();
 			return e.getMessage();
@@ -59,14 +59,14 @@ public class DuplicateDisk {
 		try {
 			safeUnmount( device );
 			runScript( dir, device, "./watercarrier/directoryToDisk.sh", label );
-			return "Synchronizing '"+dir+"' to '"+device+"'...";
+			return "Copying path "+dir+" to disk "+device;
 		} catch (Exception e) {
 			e.printStackTrace();
 			return e.getMessage();
 		}
 	}
 	
-	public void umount ( String device ) {
+	public void umount ( String device ) throws Exception {
 		for (Tree data : safeDevicesTree().branches()) {
 			if (data.keys().contains("children")) {
 				for (Tree child : data.get("children").branches()) {
@@ -83,13 +83,13 @@ public class DuplicateDisk {
 		}
 	}
 	
-	public void umount ( Tree device ) {
+	public void umount ( Tree device ) throws Exception {
 		for (String mount : device.get("mountpoints").values()) {
 			if (! mount.equals("null")) {
 				System.out.println( "Unmounting "+mount+"..." );
-				System.out.println(
-					new SystemCommand( "umount "+mount ).output()
-				);
+				SystemCommand umount = new SystemCommand( "umount "+mount );
+				System.out.println( umount.output() );
+				if (umount.exitValue() != 0) throw new Exception( "Unable to unmount "+mount );
 			}
 		}
 	}
@@ -170,26 +170,6 @@ public class DuplicateDisk {
 		return processes;
 	}
 	
-	/*public String processOutput ( String device ) {
-		SystemCommand proc = processes.get( "/dev/"+device );
-		if (proc!=null) return proc.stderr().text();
-		else return "";
-	}*/
-	
-	/*public String processStatus ( String device ) {
-		SystemCommand proc = processes.get( device );
-		if (proc!=null) {
-			if (proc.running()) {
-				return "Writing";
-			} else {
-				if (proc.destroyed()>0 || proc.destroyedForcibly()>0) return "Canceled";
-				else return "Complete";
-			}
-		} else {
-			return "";
-		}
-	}*/
-	
 	public void cleanup () {
 		for (Map.Entry<String,SystemCommand> entry : processes.entrySet()) {
 			SystemCommand sc = entry.getValue();
@@ -210,12 +190,18 @@ public class DuplicateDisk {
 	}
 	
 	public void kill ( SystemCommand proc ) {
+		System.out.println( "Killing process:\n" );
+		System.out.println( proc );
 		if (proc!=null) {
 			if (proc.running()) proc.kill();
 			try {
 				Thread.sleep(100); // 0.1 sec
-				if (proc.running()) proc.killForcibly();
-				System.out.println( "Killed '"+proc.name()+"'" );
+				if (proc.running()) {
+					proc.killForcibly();
+					System.out.println( "Killed forcibly: '"+proc.name()+"'" );
+				} else {
+					System.out.println( "Killed: '"+proc.name()+"'" );
+				}
 			} catch (Exception e) {
 				System.out.println( "ERROR: exception while killing '"+proc.name()+"'" );
 				e.printStackTrace();
@@ -224,36 +210,7 @@ public class DuplicateDisk {
 			System.out.println( "ERROR: null process!" );
 		}
 	}
-	
-	/*public Table statusTable () {
-		Table table = new SimpleTable();
-		table.append( new String[]{ "Device", "Status", "Details" } );
-		for (Map.Entry<String,SystemCommand> entry : processes.entrySet()) {
-			SystemCommand sc = entry.getValue();
-			String stderr = "";
-			while (stderr.equals("")) {
-				stderr = sc.stderr().text();
-				try{Thread.sleep(1);} catch(Exception e) {e.printStackTrace();}
-			}
-			table.append( new String[]{ entry.getKey(), (!sc.finished() ? "Writing..." : "Complete"), stderr } );
-		}
-		return table;
-	}*/
-	
-	/*public Tree statusTree () {
-		Tree tree = safeDevicesTree();
-		for (Map.Entry<String,SystemCommand> entry : processes.entrySet()) {
-			String device = entry.getKey();
-			SystemCommand process = entry.getValue();
-			tree.auto( device )
-				.add( "label", process.name() )
-				.add( "status", processStatus( device ) )
-				.add( "output", process.stderr().text() )
-			;
-		}
-		return tree;
-	}*/
-	
+		
 	public Set<DiskOperation> status () {
 		Set<DiskOperation> ops = new TreeSet<>();
 		Tree deviceTree = safeDevicesTree();
@@ -264,30 +221,6 @@ public class DuplicateDisk {
 		}
 		return ops;
 	}
-	
-	/*public static void testA ( String[] args ) throws Exception {
-		DuplicateDisk dd = new DuplicateDisk();
-		dd.diskToFile( "/dev/zero", "zeros_0.img.gz", "zeros 0" );
-		Thread.sleep(1000);
-		dd.diskToFile( "/dev/zero", "zeros_1.img.gz", "zeros 1" );
-		for (int i=0; i<4; i++) {
-			Thread.sleep(1000);
-			System.out.println( dd.statusTable() );
-		}
-		dd.cancel( "/home/giw/zeros_0.img.gz" );
-		dd.cancel( "/home/giw/zeros_1.img.gz" );
-		
-		System.out.println( "canceled first processes..." );
-		Thread.sleep(500);
-		
-		dd.fileToDisk( "zeros_1.img.gz", "/dev/null", "null A" );
-		dd.processes().get("/dev/null").timeout( 1000 ); // change the timeout to 1 sec
-		for (int i=0; i<4; i++) {
-			Thread.sleep(100);
-			System.out.println( dd.statusTable() );
-		}
-		dd.fileToDisk( "zeros_1.img.gz", "/dev/null", "null B" ); // should throw an exception
-	}*/
 	
 	public static void testB ( String[] args ) throws Exception {
 		DuplicateDisk dd = new DuplicateDisk();

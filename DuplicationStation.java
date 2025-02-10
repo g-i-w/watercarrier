@@ -15,6 +15,12 @@ public class DuplicationStation extends ServerState {
 	
 	String bootDisk;
 	
+	double bibleLocalSizeGiB;
+	double biblesdSizeGiB;
+	double rapturekitSizeGiB;
+	
+	String statusMessage = "";
+
 	private String val ( Tree unknown ) {
 		if (unknown==null) return "";
 		else return unknown.value();
@@ -24,9 +30,21 @@ public class DuplicationStation extends ServerState {
 		return ( obj!=null ? obj.toString() : "" );
 	}
 
-	public DuplicationStation ( String bootUUID, String biblesdPath, String raptureKitPath, String reloadPath, int port ) throws Exception {
+	public DuplicationStation (
+		String bootUUID,
+		String bibleLocalSize,
+		String biblesdPath,
+		String biblesdSize,
+		String raptureKitPath,
+		String rapturekitSize,
+		String reloadPath,
+		int port
+	) throws Exception {
+		bibleLocalSizeGiB = Double.parseDouble(bibleLocalSize);
 		this.biblesdPath = biblesdPath;
+		biblesdSizeGiB = Double.parseDouble(biblesdSize);
 		this.raptureKitPath = raptureKitPath;
+		rapturekitSizeGiB = Double.parseDouble(rapturekitSize);
 		this.reloadPath = reloadPath;
 		this.bootDisk = SenseDevice.deviceFromUUID( bootUUID );
 		System.out.println( "Boot Disk: "+bootDisk );
@@ -44,8 +62,6 @@ public class DuplicationStation extends ServerState {
 	
 	public String processQuery ( Map<String,String> query ) {
 		//System.out.println( "**********\n"+query+"\n**********" );
-	
-		String statusMessage = "";
 		
 		String input = query.get("input");
 		String output = query.get("output");
@@ -61,17 +77,26 @@ public class DuplicationStation extends ServerState {
 				statusMessage = duplicator.directoryToDisk( raptureKitPath, output, "RaptureKit content to "+output );
 			} else if (command.equals("cancel")) {
 				duplicator.cancel( output );
-				try {
-					Thread.sleep(1000); // 1 sec
-					duplicator.safeUnmount( output );
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+				statusMessage = "Canceled writing to "+output;
 				System.out.println( "************** CANCELING "+output+" **************" );
 			}
 		}
 		
 		return statusMessage;
+	}
+	
+	public String diskUsage ( String device ) {
+		try {
+			System.out.println( device );
+			String dfOutput = new SystemCommand( "df -h /mnt/dev/"+device ).output();
+			System.out.println( dfOutput );
+			List<String> df = Regex.groups( dfOutput, "([\\d\\.]+G)\\s+([\\d]+)%" );
+			if (df.size() > 1) return "<div><span style=\"font-size:0.7em;\">Available: "+df.get(0)+"iB</span><br><meter max=\"100\" value=\""+df.get(1)+"\" low=\"80\">"+df.get(1)+"%</meter></div>";
+			else return "";
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "";
+		}
 	}
 
 	public String devicesHTML () {
@@ -94,24 +119,27 @@ public class DuplicationStation extends ServerState {
 			
 			if (op.status().equals("Writing")) {
 				//Double bMedia = gibMedia*Math.pow(1024,3);
-				String progress;
-				if ( (progress = Regex.first( op.output(), "([\\d,]+)\\s+bytes" )) != null) {
-					progressBar = "<progress max=\""+op.sizeb()+"\" value=\""+progress+"\">"+progress+" bytes</progress>";
-				} else if ( (progress = Regex.first( op.output(), "([\\d]+)%" )) != null) {
-					progressBar = "<progress max=\"100\" value=\""+progress+"\">"+progress+"%</progress>";
+				if ( op.isChild() ) {
+					String progress = Regex.first( op.output(), "([\\d,]+)%" );
+					if (progress != null) progressBar = "<progress max=\"100\" value=\""+progress+"\">"+progress+" bytes</progress>";
+				} else {
+					String progress = Regex.first( op.output(), "([\\d,]+)\\s+bytes" );
+					if (progress != null) progressBar = "<progress max=\""+op.sizeb()+"\" value=\""+progress+"\">"+progress+" bytes</progress>";
 				}
 				link =
 					"<div class=\"device cancel\"><a href=\"?output=/dev/"+op.device()+"&command=cancel\">Cancel</a></div>";
 			} else {
 				if (op.gib() > 0.0) {
-					if (op.isChild()) {
-						link += "<div class=\"device rapturekit\"><a href=\"?output=/dev/"+op.device()+"&command=createRaptureKit\">RaptureKit</a></div>";
-						link += "<div class=\"device biblesd\"><a href=\"?output=/dev/"+op.device()+"&command=createBibleSD\">Bibles</a></div>";
-					} else if (op.gib() > 53.5) { // current minimum capacity for Bible.Local
-						link += "<div class=\"device biblelocalsd\"><a href=\"?output=/dev/"+op.device()+"&command=createBibleLocal\">Bible.Local Server</a></div>";
+					if (op.isChild() && !op.parent().status().equals("Writing") && (op.gib() >= rapturekitSizeGiB || op.gib() >= biblesdSizeGiB)) {
+						link += "<div class=\"device rapturekit\"><a href=\"?output=/dev/"+op.device()+"&command=createRaptureKit\">RaptureKit "+rapturekitSizeGiB+"GiB</a></div>";
+						link += "<div class=\"device biblesd\"><a href=\"?output=/dev/"+op.device()+"&command=createBibleSD\">Bibles "+biblesdSizeGiB+"GiB</a></div>";
+					} else if (!op.isChild() && op.gib() >= bibleLocalSizeGiB) { // current minimum capacity for Bible.Local
+						link += "<div class=\"device biblelocalsd\"><a href=\"?output=/dev/"+op.device()+"&command=createBibleLocal\">Bible.Local Server "+bibleLocalSizeGiB+"GiB</a></div>";
 					}
 				}
 			}
+			
+			String diskUsage = ( op.isChild() ? diskUsage( op.device() ) : "" );
 			
 			if (!op.status().equals("")) {
 				String statusStr = op.status();
@@ -120,18 +148,20 @@ public class DuplicationStation extends ServerState {
 				html
 					.append( "<div class=\"device\">" )
 					.append( "<div class=\"device name\">"+op.device()+"</div>" )
-					.append( "<div class=\"device size\">"+op.sizeGB()+"</div>" )
+					.append( "<div class=\"device size\">"+op.sizeGiB()+"GiB</div>" )
+					.append( diskUsage )
 					.append( link )
-					.append( "<div class=\"device label\">"+statusStr+": "+op.label()+"</div>" )
+					.append( "<div class=\"device info\">"+statusStr+": "+op.label()+"</div>" )
 					.append( "<div>"+progressBar+"</div>" )
-					.append( "<div class=\"device text\">"+op.output()+"</div>" )
+					.append( !op.output().equals("") && op.status().equals("Writing") ? "<div class=\"device status\">"+op.output()+"</div>" : "" )
 					.append( "</div>" )
 				;
 			} else {
 				html
 					.append( "<div class=\"device\">" )
 					.append( "<div class=\"device name\">"+op.device()+"</div>" )
-					.append( "<div class=\"device size\">"+op.sizeGB()+"</div>" )
+					.append( "<div class=\"device size\">"+op.sizeGiB()+"GiB</div>" )
+					.append( diskUsage )
 					.append( link )
 					.append( "</div>" )
 				;
@@ -173,7 +203,7 @@ public class DuplicationStation extends ServerState {
 	}
 	
 	public static void main ( String[] args ) throws Exception {
-		DuplicationStation ds = new DuplicationStation( args[0], args[1], args[2], args[3], Integer.parseInt(args[4]) );
+		DuplicationStation ds = new DuplicationStation( args[0], args[1], args[2], args[3], args[4], args[5], args[6], Integer.parseInt(args[7]) );
 	}
 
 }
