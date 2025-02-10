@@ -16,7 +16,8 @@ public class SenseDevice {
 
 	public static Set<String> deviceList () {
 		Set<String> list = new TreeSet<>();
-		for (String device : (new SystemCommand( "ls /dev" )).output().split( "\n" )) list.add( device );
+		for (String device : (new SystemCommand( "ls /dev" )).output().split( "\n" )) list.add( "/dev/"+device );
+		//System.out.println( list );
 		return list;
 	}
 	
@@ -68,7 +69,7 @@ public class SenseDevice {
 	public static String deviceFromUUID ( String UUID ) {
 		try {
 			String lsOutput = (new SystemCommand( "ls /dev/disk/by-uuid/"+UUID+" -l" )).output();
-			return Regex.first( lsOutput, "\\.\\.\\/\\.\\.\\/(\\w{3})" ); // could return null
+			return "/dev/"+Regex.first( lsOutput, "\\.\\.\\/\\.\\.\\/(\\w{3})" ); // could return null
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;

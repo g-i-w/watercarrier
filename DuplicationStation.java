@@ -9,6 +9,7 @@ public class DuplicationStation extends ServerState {
 
 	String biblesdPath;
 	String raptureKitPath;
+	String reloadPath;
 	DuplicateDisk duplicator;
 	TemplateFile biblelocalTemplate;
 	
@@ -23,13 +24,14 @@ public class DuplicationStation extends ServerState {
 		return ( obj!=null ? obj.toString() : "" );
 	}
 
-	public DuplicationStation ( String bootUUID, String biblesdPath, String raptureKitPath, int port ) throws Exception {
+	public DuplicationStation ( String bootUUID, String biblesdPath, String raptureKitPath, String reloadPath, int port ) throws Exception {
 		this.biblesdPath = biblesdPath;
 		this.raptureKitPath = raptureKitPath;
-		this.bootDisk = "/dev/"+SenseDevice.deviceFromUUID( bootUUID );
+		this.reloadPath = reloadPath;
+		this.bootDisk = SenseDevice.deviceFromUUID( bootUUID );
 		System.out.println( "Boot Disk: "+bootDisk );
 		this.duplicator = new DuplicateDisk();
-		this.biblelocalTemplate = new TemplateFile( "watercarrier/biblelocal-duplication.html", "////" );
+		this.biblelocalTemplate = new TemplateFile( "watercarrier/biblelocal-duplication.html", "---" );
 		ServerHTTP server = new ServerHTTP (
 			this,
 			port,
@@ -52,13 +54,19 @@ public class DuplicationStation extends ServerState {
 		if ( output!=null && command!=null ) {
 			if (command.equals("createBibleSD")) {
 				//statusMessage = duplicator.fileToDisk( biblesdPath, output, "BibleSD media -> "+output );
-				statusMessage = duplicator.directoryToDisk( biblesdPath, output, "BibleSD content -> "+output );
+				statusMessage = duplicator.directoryToDisk( biblesdPath, output, "BibleSD content to "+output );
 			} else if (command.equals("createBibleLocal")) {
-				statusMessage = duplicator.diskToDisk( bootDisk, output, "Bible.Local boot media -> "+output );
+				statusMessage = duplicator.diskToDisk( bootDisk, output, "Bible.Local boot media to "+output );
 			} else if (command.equals("createRaptureKit")) {
-				statusMessage = duplicator.directoryToDisk( raptureKitPath, output, "RaptureKit content -> "+output );
+				statusMessage = duplicator.directoryToDisk( raptureKitPath, output, "RaptureKit content to "+output );
 			} else if (command.equals("cancel")) {
 				duplicator.cancel( output );
+				try {
+					Thread.sleep(1000); // 1 sec
+					duplicator.safeUnmount( output );
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 				System.out.println( "************** CANCELING "+output+" **************" );
 			}
 		}
@@ -68,59 +76,62 @@ public class DuplicationStation extends ServerState {
 
 	public String devicesHTML () {
 		StringBuilder html = new StringBuilder();
-		Tree statusTree = duplicator.statusTree();
-		for (String device : statusTree.keys()) {
-			Tree branch = statusTree.get(device);
+		//Tree statusTree = duplicator.statusTree();
+		for (DiskOperation op : duplicator.status()) {
+			//Tree branch = statusTree.get(device);
 
-			String size = val(branch.get("size"));
-			Double gibMedia = 0.0;
-			if (!size.equals("")) gibMedia = Double.valueOf( size.substring(0, size.length()-1) );
-			String gbMediaStr = String.format("%.1f", (gibMedia*1.074))+" GB";
+			//String size = val(branch.get("size"));
+			//Double gibMedia = 0.0;
+			//if (!size.equals("")) gibMedia = Double.valueOf( size.substring(0, size.length()-1) );
+			//String gbMediaStr = String.format("%.1f", (gibMedia*1.074))+" GB";
 
-			String status = val(branch.get("status"));
+			//String status = val(branch.get("status"));
 			String link = "";
-			String label = val(branch.get("label"));
-			String output = val(branch.get("output"));
+			//String label = val(branch.get("label"));
+			//String output = val(branch.get("output"));
 			String progressBar = "";
-			String statusStr = "";
+			//String statusStr = "";
 			
-			if (status.equals("Writing")) {
-				Double bMedia = gibMedia*Math.pow(1024,3);
-				String progress = Regex.first( output, "([\\d,]+)\\s+bytes" );
-				if (progress!=null) {
-					progressBar = "<progress max=\""+bMedia+"\" value=\""+progress+"\">"+progress+" bytes</progress>";
+			if (op.status().equals("Writing")) {
+				//Double bMedia = gibMedia*Math.pow(1024,3);
+				String progress;
+				if ( (progress = Regex.first( op.output(), "([\\d,]+)\\s+bytes" )) != null) {
+					progressBar = "<progress max=\""+op.sizeb()+"\" value=\""+progress+"\">"+progress+" bytes</progress>";
+				} else if ( (progress = Regex.first( op.output(), "([\\d]+)%" )) != null) {
+					progressBar = "<progress max=\"100\" value=\""+progress+"\">"+progress+"%</progress>";
 				}
 				link =
-					"<div class=\"device cancel\"><a href=\"?output="+device+"&command=cancel\">Cancel</a></div>";
+					"<div class=\"device cancel\"><a href=\"?output=/dev/"+op.device()+"&command=cancel\">Cancel</a></div>";
 			} else {
-				if (gibMedia > 0.0) {
-					link += "<div class=\"device rapturekit\"><a href=\"?output="+device+"&command=createRaptureKit\">RaptureKit</a></div>";
-					link += "<div class=\"device biblesd\"><a href=\"?output="+device+"&command=createBibleSD\">Bibles</a></div>";
-					if (gibMedia > 36.7) { // minimum capacity for possible copy of Bible.Local
-						link += "<div class=\"device biblelocalsd\"><a href=\"?output="+device+"&command=createBibleLocal\">Bible.Local Server</a></div>";
+				if (op.gib() > 0.0) {
+					if (op.isChild()) {
+						link += "<div class=\"device rapturekit\"><a href=\"?output=/dev/"+op.device()+"&command=createRaptureKit\">RaptureKit</a></div>";
+						link += "<div class=\"device biblesd\"><a href=\"?output=/dev/"+op.device()+"&command=createBibleSD\">Bibles</a></div>";
+					} else if (op.gib() > 53.5) { // current minimum capacity for Bible.Local
+						link += "<div class=\"device biblelocalsd\"><a href=\"?output=/dev/"+op.device()+"&command=createBibleLocal\">Bible.Local Server</a></div>";
 					}
 				}
 			}
 			
-			if (!status.equals("")) {
-				statusStr = status;
-				if (status.equals("Complete")) statusStr = "<span style=\"background-color:lightgreen;\">Complete</span>";
-				if (status.equals("Canceled")) statusStr = "<span style=\"background-color:rgb(255,200,200);\">Canceled</span>";
+			if (!op.status().equals("")) {
+				String statusStr = op.status();
+				if (op.status().equals("Complete")) statusStr = "<span style=\"background-color:lightgreen;\">Complete</span>";
+				if (op.status().equals("Canceled")) statusStr = "<span style=\"background-color:rgb(255,200,200);\">Canceled</span>";
 				html
 					.append( "<div class=\"device\">" )
-					.append( "<div class=\"device name\">"+val(branch.get("name"))+"</div>" )
-					.append( "<div class=\"device size\">"+gbMediaStr+"</div>" )
+					.append( "<div class=\"device name\">"+op.device()+"</div>" )
+					.append( "<div class=\"device size\">"+op.sizeGB()+"</div>" )
 					.append( link )
-					.append( "<div class=\"device label\">"+statusStr+": "+label+"</div>" )
+					.append( "<div class=\"device label\">"+statusStr+": "+op.label()+"</div>" )
 					.append( "<div>"+progressBar+"</div>" )
-					.append( "<div class=\"device text\">"+output+"</div>" )
+					.append( "<div class=\"device text\">"+op.output()+"</div>" )
 					.append( "</div>" )
 				;
 			} else {
 				html
 					.append( "<div class=\"device\">" )
-					.append( "<div class=\"device name\">"+branch.get("name")+"</div>" )
-					.append( "<div class=\"device size\">"+gbMediaStr+"</div>" )
+					.append( "<div class=\"device name\">"+op.device()+"</div>" )
+					.append( "<div class=\"device size\">"+op.sizeGB()+"</div>" )
 					.append( link )
 					.append( "</div>" )
 				;
@@ -141,6 +152,7 @@ public class DuplicationStation extends ServerState {
 			if (session.request().path().equals("/")) {
 			
 				// fill in blanks in the TemplateFile
+				biblelocalTemplate.replace( "reloadPath", reloadPath );
 				biblelocalTemplate.replace( "statusMessage", processQuery( session.request().query() ) );
 				biblelocalTemplate.replace( "deviceDivs", devicesHTML() );
 			
@@ -161,7 +173,7 @@ public class DuplicationStation extends ServerState {
 	}
 	
 	public static void main ( String[] args ) throws Exception {
-		DuplicationStation ds = new DuplicationStation( args[0], args[1], args[2], Integer.parseInt(args[3]) );
+		DuplicationStation ds = new DuplicationStation( args[0], args[1], args[2], args[3], Integer.parseInt(args[4]) );
 	}
 
 }

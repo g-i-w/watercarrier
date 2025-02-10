@@ -35,7 +35,7 @@ public class DuplicateDisk {
 	
 	public String fileToDisk ( String file, String device, String label ) {
 		try {
-			beforeDiskWrite( device );
+			safeUnmount( device );
 			runScript( file, device, "./watercarrier/fileToDisk.sh", label );
 			return "Writing file '"+file+"' to disk '"+device+"'...";
 		} catch (Exception e) {
@@ -46,7 +46,7 @@ public class DuplicateDisk {
 	
 	public String diskToDisk ( String input, String output, String label ) {
 		try {
-			beforeDiskWrite( output );
+			safeUnmount( output );
 			runScript( input, output, "./watercarrier/raw.sh", label );
 			return "Copying '"+input+" to '"+output+"'...";
 		} catch (Exception e) {
@@ -57,12 +57,29 @@ public class DuplicateDisk {
 	
 	public String directoryToDisk ( String dir, String device, String label ) {
 		try {
-			beforeDiskWrite( device );
+			safeUnmount( device );
 			runScript( dir, device, "./watercarrier/directoryToDisk.sh", label );
 			return "Synchronizing '"+dir+"' to '"+device+"'...";
 		} catch (Exception e) {
 			e.printStackTrace();
 			return e.getMessage();
+		}
+	}
+	
+	public void umount ( String device ) {
+		for (Tree data : safeDevicesTree().branches()) {
+			if (data.keys().contains("children")) {
+				for (Tree child : data.get("children").branches()) {
+					String name = child.get("name").value();
+					if (device.indexOf(name) > -1) {
+						umount( child );
+					}
+				}
+			}
+			String name = data.get("name").value();
+			if (device.indexOf(name) > -1) {
+				umount( data );
+			}
 		}
 	}
 	
@@ -77,20 +94,13 @@ public class DuplicateDisk {
 		}
 	}
 
-	public void beforeDiskWrite ( String device ) throws Exception {
+	public void safeUnmount ( String device ) throws Exception {
 		if (device.equals("null")) return; // allow "/dev/null" for testing
-		Tree safeDevicesTree = safeDevicesTree();
-		if (!safeDevicesTree.keys().contains(device)) throw new Exception( device+" is not a safe device" );
-		
-		System.out.println( "Safe Device Tree:\n"+safeDevicesTree.serialize() );
-		
-		umount( safeDevicesTree.get(device) );
-		
-		if (safeDevicesTree.get(device).keys().contains("children")) {
-			for (Tree child : safeDevicesTree.get(device).get("children").branches()) {
-				umount( child );
-			}
+		if (!safeDevices().contains(device)) {
+			System.out.println( safeDevices() );
+			throw new Exception( device+" is not a safe device" );
 		}
+		umount( device );		
 	}
 	
 	public void dd ( String in, String out ) throws Exception {
@@ -98,8 +108,10 @@ public class DuplicateDisk {
 	}
 
 	public void runScript ( String input, String output, String script, String label ) throws Exception {
+	
+		if (processes.containsKey(output) && !processes.get(output).finished()) throw new Exception( output+" is busy" );
 		
-		if (processes.keySet().contains(output) && !processes.get(output).finished()) throw new Exception( output+" is busy" );
+		System.out.println( input+","+output+","+script+","+label );
 		
 		String command = script+" "+input+" "+output;
 		
@@ -129,26 +141,14 @@ public class DuplicateDisk {
 			if (
 				( !Regex.exists( device, bootDisk ) ) // NOT the boot disk
 				&&
-				( Regex.exists( device, "^sd[a-z]$" ) || Regex.exists( device, "^mmcblk[0-9]$" ) ) // IS a safe disk
+				( Regex.exists( device, "^\\/dev\\/sd[a-z]$" ) || Regex.exists( device, "^\\/dev\\/mmcblk[0-9]" ) ) // IS a safe disk
 			) {
 				safe.add( device );
 			}
 		}
+		System.out.println( safe );
 		return safe;
 	}
-	
-	/*public Map<String,String> safeDevicesInfo () {
-		Map<String,String> info = new TreeMap<>();
-		Table deviceInfo = devices.deviceInfo();
-		Set<String> safe = safeDevices();
-		for (List<String> row : deviceInfo.data()) {
-			if (row.size()>1) {
-				String device = row.get(0);
-				if (safe.contains(device)) info.put( device, row.get(1) );
-			}
-		}
-		return info;
-	}*/
 	
 	public Tree safeDevicesTree () {
 		Tree deviceTree = devices.deviceTree();
@@ -156,8 +156,8 @@ public class DuplicateDisk {
 		Set<String> safe = safeDevices();
 		Tree safeDevices = new JSON();
 		for (Tree device : deviceTree.get("blockdevices").branches()) {
-			String name = device.get("name").value();
-			if (safe.contains(name)) safeDevices.add( "/dev/"+name, device );
+			String name = "/dev/"+device.get("name").value();
+			if (safe.contains(name)) safeDevices.add( name, device );
 		}
 		return safeDevices;
 	}
@@ -170,13 +170,13 @@ public class DuplicateDisk {
 		return processes;
 	}
 	
-	public String processOutput ( String device ) {
+	/*public String processOutput ( String device ) {
 		SystemCommand proc = processes.get( "/dev/"+device );
 		if (proc!=null) return proc.stderr().text();
 		else return "";
-	}
+	}*/
 	
-	public String processStatus ( String device ) {
+	/*public String processStatus ( String device ) {
 		SystemCommand proc = processes.get( device );
 		if (proc!=null) {
 			if (proc.running()) {
@@ -188,7 +188,7 @@ public class DuplicateDisk {
 		} else {
 			return "";
 		}
-	}
+	}*/
 	
 	public void cleanup () {
 		for (Map.Entry<String,SystemCommand> entry : processes.entrySet()) {
@@ -198,19 +198,34 @@ public class DuplicateDisk {
 	}
 	
 	public void cancel () {
-		for (String output : processes.keySet()) {
-			cancel( output );
+		for (SystemCommand proc : processes.values()) {
+			if (proc!=null && proc.running())  kill( proc );
 		}
 	}
 
-	public void cancel ( String output ) {
-		if (processes.containsKey(output)) {
-			processes.get(output).kill();
-			System.out.println( "killed "+output );
+	public void cancel ( String fragment ) {
+		for (Map.Entry<String,SystemCommand> entry : processes.entrySet()) {
+			if (entry.getKey().indexOf( fragment ) > -1) kill( entry.getValue() );
 		}
 	}
 	
-	public Table statusTable () {
+	public void kill ( SystemCommand proc ) {
+		if (proc!=null) {
+			if (proc.running()) proc.kill();
+			try {
+				Thread.sleep(100); // 0.1 sec
+				if (proc.running()) proc.killForcibly();
+				System.out.println( "Killed '"+proc.name()+"'" );
+			} catch (Exception e) {
+				System.out.println( "ERROR: exception while killing '"+proc.name()+"'" );
+				e.printStackTrace();
+			}
+		} else {
+			System.out.println( "ERROR: null process!" );
+		}
+	}
+	
+	/*public Table statusTable () {
 		Table table = new SimpleTable();
 		table.append( new String[]{ "Device", "Status", "Details" } );
 		for (Map.Entry<String,SystemCommand> entry : processes.entrySet()) {
@@ -223,9 +238,9 @@ public class DuplicateDisk {
 			table.append( new String[]{ entry.getKey(), (!sc.finished() ? "Writing..." : "Complete"), stderr } );
 		}
 		return table;
-	}
+	}*/
 	
-	public Tree statusTree () {
+	/*public Tree statusTree () {
 		Tree tree = safeDevicesTree();
 		for (Map.Entry<String,SystemCommand> entry : processes.entrySet()) {
 			String device = entry.getKey();
@@ -237,9 +252,20 @@ public class DuplicateDisk {
 			;
 		}
 		return tree;
+	}*/
+	
+	public Set<DiskOperation> status () {
+		Set<DiskOperation> ops = new TreeSet<>();
+		Tree deviceTree = safeDevicesTree();
+		for (Tree data : deviceTree.branches()) {
+			DiskOperation op = new DiskOperation( data, this, null ); // null indicates root parent
+			ops.add( op );
+			ops.addAll( op.children() );
+		}
+		return ops;
 	}
 	
-	public static void testA ( String[] args ) throws Exception {
+	/*public static void testA ( String[] args ) throws Exception {
 		DuplicateDisk dd = new DuplicateDisk();
 		dd.diskToFile( "/dev/zero", "zeros_0.img.gz", "zeros 0" );
 		Thread.sleep(1000);
@@ -261,11 +287,10 @@ public class DuplicateDisk {
 			System.out.println( dd.statusTable() );
 		}
 		dd.fileToDisk( "zeros_1.img.gz", "/dev/null", "null B" ); // should throw an exception
-	}
+	}*/
 	
 	public static void testB ( String[] args ) throws Exception {
 		DuplicateDisk dd = new DuplicateDisk();
-		String gzipFile = args[0];
 		String output = "";
 		
 		Scanner scanner = new Scanner( System.in );
@@ -273,13 +298,16 @@ public class DuplicateDisk {
 		while (true) {
 			if (dd.changed()) {
 				//System.out.println( dd.safeDevicesTree().serialize() );
-				System.out.println( "Devices: "+dd.safeDevicesTree()+"\nSelect device > " );
+				//System.out.println( "Devices: "+dd.statusTree().serialize() );
+				System.out.println( "Select device > " );
 				String input = scanner.nextLine().trim();
 				if (input.equals("q")) break;
 				if (!input.equals("")) {
 					try {
-						dd.fileToDisk( gzipFile, input, input );
-						System.out.println( "Cloning "+gzipFile+" --> "+input+"..." );
+						//dd.fileToDisk( args[0], input, input );
+						dd.directoryToDisk( args[0], "/dev/"+input, input );
+						System.out.println( "Cloning "+args[0]+" --> "+input+"..." );
+						System.out.println( dd.status() );
 					} catch (Exception e) {
 						System.err.println( e );
 					}
@@ -288,7 +316,7 @@ public class DuplicateDisk {
 				}
 			}
 			Thread.sleep(500);
-			String nextOutput = dd.statusTree().serialize();
+			String nextOutput = dd.status().toString();
 			//System.out.println(nextOutput);
 			if (!output.equals(nextOutput)) {
 				output = nextOutput;
