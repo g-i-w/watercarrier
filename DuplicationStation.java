@@ -88,7 +88,7 @@ public class DuplicationStation extends ServerState {
 	public String diskUsage ( String device ) {
 		try {
 			System.out.println( device );
-			String dfOutput = new SystemCommand( "df -h /mnt/dev/"+device ).output();
+			String dfOutput = new SystemCommand( "df -h /dev/"+device ).output();
 			System.out.println( dfOutput );
 			List<String> df = Regex.groups( dfOutput, "([\\d\\.]+G)\\s+([\\d]+)%" );
 			if (df.size() > 1) return "<div><span style=\"font-size:0.7em;\">Available: "+df.get(0)+"iB</span><br><meter max=\"100\" value=\""+df.get(1)+"\" low=\"80\">"+df.get(1)+"%</meter></div>";

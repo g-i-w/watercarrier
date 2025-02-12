@@ -47,7 +47,7 @@ public class DuplicateDisk {
 	public String diskToDisk ( String input, String output, String label ) {
 		try {
 			safeUnmount( output );
-			runScript( input, output, "./watercarrier/raw.sh", label );
+			runScript( input, output, "./watercarrier/diskToDisk.sh", label );
 			return "Copying disk "+input+" to disk "+output;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -146,7 +146,7 @@ public class DuplicateDisk {
 				safe.add( device );
 			}
 		}
-		System.out.println( safe );
+		//System.out.println( safe );
 		return safe;
 	}
 	
@@ -193,19 +193,7 @@ public class DuplicateDisk {
 		System.out.println( "Killing process:\n" );
 		System.out.println( proc );
 		if (proc!=null) {
-			if (proc.running()) proc.kill();
-			try {
-				Thread.sleep(100); // 0.1 sec
-				if (proc.running()) {
-					proc.killForcibly();
-					System.out.println( "Killed forcibly: '"+proc.name()+"'" );
-				} else {
-					System.out.println( "Killed: '"+proc.name()+"'" );
-				}
-			} catch (Exception e) {
-				System.out.println( "ERROR: exception while killing '"+proc.name()+"'" );
-				e.printStackTrace();
-			}
+			proc.kill();
 		} else {
 			System.out.println( "ERROR: null process!" );
 		}
