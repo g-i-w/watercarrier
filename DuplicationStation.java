@@ -70,7 +70,7 @@ public class DuplicationStation extends ServerState {
 		if ( output!=null && command!=null ) {
 			if (command.equals("createBibleSD")) {
 				//statusMessage = duplicator.fileToDisk( biblesdPath, output, "BibleSD media -> "+output );
-				statusMessage = duplicator.directoryToDisk( biblesdPath, output, "BibleSD content to "+output );
+				statusMessage = duplicator.directoryToDisk( biblesdPath, output, "Bibles content to "+output );
 			} else if (command.equals("createBibleLocal")) {
 				statusMessage = duplicator.diskToDisk( bootDisk, output, "Bible.Local boot media to "+output );
 			} else if (command.equals("createRaptureKit")) {
@@ -85,62 +85,62 @@ public class DuplicationStation extends ServerState {
 		return statusMessage;
 	}
 	
-	public String diskUsage ( String device ) {
+	private String rsyncProgress ( DiskOperation op ) {
 		try {
-			System.out.println( device );
-			String dfOutput = new SystemCommand( "df -h /dev/"+device ).output();
-			System.out.println( dfOutput );
-			List<String> df = Regex.groups( dfOutput, "([\\d\\.]+G)\\s+([\\d]+)%" );
-			if (df.size() > 1) return "<div><span style=\"font-size:0.7em;\">Available: "+df.get(0)+"iB</span><br><meter max=\"100\" value=\""+df.get(1)+"\" low=\"80\">"+df.get(1)+"%</meter></div>";
-			else return "";
+			//String progress = Regex.first( op.output(), "([\\d]+)%" );
+			List<String> progress = Regex.groups( op.output(), "([\\d\\.]+)(\\w)" );
+			//if (progress != null) progressBar = "<progress max=\"100\" value=\""+progress+"\">"+progress+"%</progress>";
+			if (progress.size() >= 2) {
+				double total = op.size(); // default
+				if (op.label().indexOf("Bibles")==0) total = biblesdSizeGiB;
+				if (op.label().indexOf("RaptureKit")==0) total = rapturekitSizeGiB;
+				double transferred = Double.parseDouble( progress.get(0) );
+				if (progress.get(1).equals("M")) transferred = transferred/1e3;
+				if (progress.get(1).equals("K")) transferred = transferred/1e6;
+				double percent = transferred/total*100;
+				return "<progress max=\"100\" value=\""+percent+"\">"+percent+"%</progress>";
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			return "";
 		}
+		return "";
 	}
-
+	
 	public String devicesHTML () {
 		StringBuilder html = new StringBuilder();
-		//Tree statusTree = duplicator.statusTree();
+
 		for (DiskOperation op : duplicator.status()) {
-			//Tree branch = statusTree.get(device);
-
-			//String size = val(branch.get("size"));
-			//Double gibMedia = 0.0;
-			//if (!size.equals("")) gibMedia = Double.valueOf( size.substring(0, size.length()-1) );
-			//String gbMediaStr = String.format("%.1f", (gibMedia*1.074))+" GB";
-
-			//String status = val(branch.get("status"));
 			String link = "";
-			//String label = val(branch.get("label"));
-			//String output = val(branch.get("output"));
 			String progressBar = "";
-			//String statusStr = "";
 			
+			// link or cancel & progress bar
 			if (op.status().equals("Writing")) {
-				//Double bMedia = gibMedia*Math.pow(1024,3);
 				if ( op.isChild() ) {
-					String progress = Regex.first( op.output(), "([\\d,]+)%" );
-					if (progress != null) progressBar = "<progress max=\"100\" value=\""+progress+"\">"+progress+" bytes</progress>";
+					progressBar = rsyncProgress( op );
 				} else {
 					String progress = Regex.first( op.output(), "([\\d,]+)\\s+bytes" );
 					if (progress != null) progressBar = "<progress max=\""+op.sizeb()+"\" value=\""+progress+"\">"+progress+" bytes</progress>";
 				}
 				link =
-					"<div class=\"device cancel\"><a href=\"?output=/dev/"+op.device()+"&command=cancel\">Cancel</a></div>";
+					"<div class=\"device cancel\"><a href=\"?output="+op.device()+"&command=cancel\">Cancel</a></div>";
 			} else {
-				if (op.gib() > 0.0) {
-					if (op.isChild() && !op.parent().status().equals("Writing") && (op.gib() >= rapturekitSizeGiB || op.gib() >= biblesdSizeGiB)) {
-						link += "<div class=\"device rapturekit\"><a href=\"?output=/dev/"+op.device()+"&command=createRaptureKit\">RaptureKit "+rapturekitSizeGiB+"GiB</a></div>";
-						link += "<div class=\"device biblesd\"><a href=\"?output=/dev/"+op.device()+"&command=createBibleSD\">Bibles "+biblesdSizeGiB+"GiB</a></div>";
-					} else if (!op.isChild() && op.gib() >= bibleLocalSizeGiB) { // current minimum capacity for Bible.Local
-						link += "<div class=\"device biblelocalsd\"><a href=\"?output=/dev/"+op.device()+"&command=createBibleLocal\">Bible.Local Server "+bibleLocalSizeGiB+"GiB</a></div>";
+				if (op.size() > 0.0) {
+					if (op.isChild() && !op.parent().status().equals("Writing") && (op.size() >= rapturekitSizeGiB || op.size() >= biblesdSizeGiB)) {
+						link += "<div class=\"device rapturekit\"><a href=\"?output="+op.device()+"&command=createRaptureKit\">RaptureKit "+rapturekitSizeGiB+"GiB</a></div>";
+						link += "<div class=\"device biblesd\"><a href=\"?output="+op.device()+"&command=createBibleSD\">Bibles "+biblesdSizeGiB+"GiB</a></div>";
+					} else if (!op.isChild() && op.size() >= bibleLocalSizeGiB) { // current minimum capacity for Bible.Local
+						link += "<div class=\"device biblelocalsd\"><a href=\"?output="+op.device()+"&command=createBibleLocal\">Bible.Local Server "+bibleLocalSizeGiB+"GiB</a></div>";
 					}
 				}
 			}
 			
-			String diskUsage = ( op.isChild() ? diskUsage( op.device() ) : "" );
+			// disk usage
+			String diskUsage = "";
+			if (op.isChild() && op.usedUnit()!=null) {
+				diskUsage = "<div><span style=\"font-size:0.7em;\">Used: "+op.used()+op.usedUnit()+"iB</span><br><meter max=\"100\" value=\""+op.percent()+"\" low=\"80\">"+op.percent()+"%</meter></div>";
+			}
 			
+			// operational info
 			if (!op.status().equals("")) {
 				String statusStr = op.status();
 				if (op.status().equals("Complete")) statusStr = "<span style=\"background-color:lightgreen;\">Complete</span>";
@@ -166,6 +166,7 @@ public class DuplicationStation extends ServerState {
 					.append( "</div>" )
 				;
 			}
+			
 			html.append( "<br>" );
 		}
 		return html.toString();

@@ -15,28 +15,71 @@ public class DiskOperation implements Comparable {
 	private String status;
 	private String label;
 	private String output;
-	private double gib;
+	private double size;
+	private String sizeUnit;
+	private double used;
+	private String usedUnit;
+	private int percent;
+
+	public DiskOperation ( String device ) {
+		this.device = device;
+		refreshStats( data() );
+	}
 
 	public DiskOperation ( Tree deviceData, DuplicateDisk dd, DiskOperation parent ) {
+		device = "/dev/"+deviceData.get("name").value();
 		this.dd = dd;
 		this.parent = parent;
-		refresh( deviceData );
+		refreshStats( deviceData );
+		refreshProc( deviceData );
 	}
 	
-	public DiskOperation refresh ( Tree deviceData ) {
+	
+	public void refreshStats ( Tree deviceData ) {
+		size = 0.0;
+		used = 0.0;
+		percent = 0;
+		
+		if (deviceData==null) return;
+
+		try {
+			if (deviceData.keys().contains("size")) {
+				String sizeStr = deviceData.get("size").value();
+				if (!sizeStr.equals("") && !sizeStr.equals("null")) {
+					size = Double.valueOf( sizeStr.substring(0, sizeStr.length()-1) ).doubleValue();
+					sizeUnit = sizeStr.substring( sizeStr.length()-1, sizeStr.length() );
+				}
+			}
+			
+			if (deviceData.keys().contains("fsuse%")) {
+				String percentStr = deviceData.get("fsuse%").value();
+				if (!percentStr.equals("") && !percentStr.equals("null")) {
+					percent = Integer.valueOf( percentStr.substring(0, percentStr.length()-1) ).intValue();
+				}
+			}
+			
+			if (deviceData.keys().contains("fsused")) {
+				String usedStr = deviceData.get("fsused").value();
+				//System.out.println( "DiskOperation: "+device+" "+usedStr );
+				if (!usedStr.equals("") && !usedStr.equals("null")) {
+					used = Double.valueOf( usedStr.substring(0, usedStr.length()-1) ).doubleValue();
+					usedUnit = usedStr.substring( usedStr.length()-1, usedStr.length() );
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void refreshProc ( Tree deviceData ) {
 		children = new TreeSet<>();
-		device = deviceData.get("name").value();
 		status = "";
 		label = "";
 		output = "";
-		gib = 0.0;
-
-		if (deviceData.keys().contains("size")) {
-			String size = deviceData.get("size").value();
-			if (!size.equals("")) gib = Double.valueOf( size.substring(0, size.length()-1) ).doubleValue();
-		}
 		
-		SystemCommand proc = dd.processes().get( "/dev/"+device );
+		if (deviceData==null) return;
+		
+		SystemCommand proc = dd.processes().get( device );
 		
 		if (proc!=null) {
 			label = proc.name();
@@ -55,8 +98,18 @@ public class DiskOperation implements Comparable {
 				if (childOp.status().equals("Writing")) status = "Writing";
 			}
 		}
-		
-		return this;
+	}
+	
+	public Tree data () {
+		try {
+			return new JSON( (new SystemCommand( "lsblk --json --output name,path,size,mountpoints,fsavail,fsused,fsuse% "+device )).output() )
+				.get("blockdevices")
+				.get("0")
+			;
+		} catch (Exception e) {
+			//e.printStackTrace();
+			return null;
+		}
 	}
 	
 	public DiskOperation parent () { return parent; }
@@ -73,20 +126,36 @@ public class DiskOperation implements Comparable {
 	
 	public String output () { return output; }
 	
-	public double gib () {
-		return gib;
+	public double size () {
+		return size;
+	}
+	
+	public String sizeUnit () {
+		return sizeUnit;
+	}
+
+	public double used () {
+		return used;
+	}
+	
+	public String usedUnit () {
+		return usedUnit;
+	}
+
+	public int percent () {
+		return percent;
 	}
 	
 	public String sizeGiB () {
-		return String.valueOf( gib );
+		return String.valueOf( size );
 	}
 	
 	public String sizeGB () {
-		return String.format("%.1f", (gib*1.074));
+		return String.format("%.1f", (size*1.074));
 	}
 	
 	public String sizeb () {
-		return String.valueOf( gib*Math.pow(1024,3) );
+		return String.valueOf( size*Math.pow(1024,3) );
 	}
 	
 	public String toString () {

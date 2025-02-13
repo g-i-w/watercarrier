@@ -58,7 +58,7 @@ public class SenseDevice {
 	public static Tree deviceTree () {
 		try {
 			return new JSON(
-				(new SystemCommand( "lsblk --json --output name,size,mountpoints" )).output()
+				(new SystemCommand( "lsblk --json --output name,path,size,mountpoints,fsavail,fsused,fsuse%" )).output()
 			);
 		} catch (Exception e) {
 			e.printStackTrace();

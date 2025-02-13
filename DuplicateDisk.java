@@ -71,13 +71,13 @@ public class DuplicateDisk {
 			if (data.keys().contains("children")) {
 				for (Tree child : data.get("children").branches()) {
 					String name = child.get("name").value();
-					if (device.indexOf(name) > -1) {
+					if (name.indexOf(device) > -1 || device.indexOf(name) > -1) {
 						umount( child );
 					}
 				}
 			}
 			String name = data.get("name").value();
-			if (device.indexOf(name) > -1) {
+			if (name.indexOf(device) > -1 || device.indexOf(name) > -1) {
 				umount( data );
 			}
 		}
