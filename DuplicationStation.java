@@ -69,8 +69,15 @@ public class DuplicationStation extends ServerState {
 		
 		if ( output!=null && command!=null ) {
 			if (command.equals("createBibleSD")) {
-				//statusMessage = duplicator.fileToDisk( biblesdPath, output, "BibleSD media -> "+output );
 				statusMessage = duplicator.directoryToDisk( biblesdPath, output, "Bibles content to "+output );
+			} else if (command.equals("createBibleSD-Africa")) {
+				statusMessage = duplicator.directoryToDisk( biblesdPath+"-Africa", output, "Africa Bibles content to "+output );
+			} else if (command.equals("createBibleSD-Americas")) {
+				statusMessage = duplicator.directoryToDisk( biblesdPath+"-Americas", output, "Americas Bibles content to "+output );
+			} else if (command.equals("createBibleSD-Eurasia")) {
+				statusMessage = duplicator.directoryToDisk( biblesdPath+"-Eurasia", output, "Eurasia Bibles content to "+output );
+			} else if (command.equals("createBibleSD-Oceania")) {
+				statusMessage = duplicator.directoryToDisk( biblesdPath+"-Oceania", output, "Oceania Bibles content to "+output );
 			} else if (command.equals("createBibleLocal")) {
 				statusMessage = duplicator.diskToDisk( bootDisk, output, "Bible.Local boot media to "+output );
 			} else if (command.equals("createRaptureKit")) {
@@ -85,7 +92,7 @@ public class DuplicationStation extends ServerState {
 		return statusMessage;
 	}
 	
-	private String rsyncProgress ( DiskOperation op ) {
+	private String rsyncProgress ( DiskData op ) {
 		try {
 			//String progress = Regex.first( op.output(), "([\\d]+)%" );
 			List<String> progress = Regex.groups( op.output(), "([\\d\\.]+)(\\w)" );
@@ -109,7 +116,7 @@ public class DuplicationStation extends ServerState {
 	public String devicesHTML () {
 		StringBuilder html = new StringBuilder();
 
-		for (DiskOperation op : duplicator.status()) {
+		for (DiskData op : duplicator.status()) {
 			String link = "";
 			String progressBar = "";
 			
@@ -124,12 +131,18 @@ public class DuplicationStation extends ServerState {
 				link =
 					"<div class=\"device cancel\"><a href=\"?output="+op.device()+"&command=cancel\">Cancel</a></div>";
 			} else {
-				if (op.size() > 0.0) {
-					if (op.isChild() && !op.parent().status().equals("Writing") && (op.size() >= rapturekitSizeGiB || op.size() >= biblesdSizeGiB)) {
-						link += "<div class=\"device rapturekit\"><a href=\"?output="+op.device()+"&command=createRaptureKit\">RaptureKit "+rapturekitSizeGiB+"GiB</a></div>";
-						link += "<div class=\"device biblesd\"><a href=\"?output="+op.device()+"&command=createBibleSD\">Bibles "+biblesdSizeGiB+"GiB</a></div>";
+				if (op.size() > 0.0 && !op.sizeUnit().toLowerCase().equals("k") && !op.sizeUnit().equals("M")) {
+					if (op.isChild() && !op.parent().status().equals("Writing")) {
+						if (op.size() >= rapturekitSizeGiB) link += "<div class=\"device rapturekit\"><a href=\"?output="+op.device()+"&command=createRaptureKit\">RaptureKit "+String.format("%.1f", rapturekitSizeGiB*1.074)+"GB</a></div>";
+						if (op.size() >= biblesdSizeGiB/4) {
+							link += "<div class=\"device biblesd\"><a href=\"?output="+op.device()+"&command=createBibleSD-Africa\">Africa "+String.format("%.1f", biblesdSizeGiB/4*1.074)+"GB</a></div>";
+							link += "<div class=\"device biblesd\"><a href=\"?output="+op.device()+"&command=createBibleSD-Americas\">Americas "+String.format("%.1f", biblesdSizeGiB/4*1.074)+"GB</a></div>";
+							link += "<div class=\"device biblesd\"><a href=\"?output="+op.device()+"&command=createBibleSD-Eurasia\">Eurasia "+String.format("%.1f", biblesdSizeGiB/4*1.074)+"GB</a></div>";
+							link += "<div class=\"device biblesd\"><a href=\"?output="+op.device()+"&command=createBibleSD-Oceania\">Oceania "+String.format("%.1f", biblesdSizeGiB/4*1.074)+"GB</a></div>";
+						}
+						if (op.size() >= biblesdSizeGiB) link += "<div class=\"device biblesd\"><a href=\"?output="+op.device()+"&command=createBibleSD\">Bibles "+String.format("%.1f", biblesdSizeGiB*1.074)+"GB</a></div>";
 					} else if (!op.isChild() && op.size() >= bibleLocalSizeGiB) { // current minimum capacity for Bible.Local
-						link += "<div class=\"device biblelocalsd\"><a href=\"?output="+op.device()+"&command=createBibleLocal\">Bible.Local Server "+bibleLocalSizeGiB+"GiB</a></div>";
+						link += "<div class=\"device biblelocalsd\"><a href=\"?output="+op.device()+"&command=createBibleLocal\">Bible.Local Server "+String.format("%.1f", bibleLocalSizeGiB*1.074)+"GB</a></div>";
 					}
 				}
 			}
@@ -137,7 +150,7 @@ public class DuplicationStation extends ServerState {
 			// disk usage
 			String diskUsage = "";
 			if (op.isChild() && op.usedUnit()!=null) {
-				diskUsage = "<div><span style=\"font-size:0.7em;\">Used: "+op.used()+op.usedUnit()+"iB</span><br><meter max=\"100\" value=\""+op.percent()+"\" low=\"80\">"+op.percent()+"%</meter></div>";
+				diskUsage = "<div><span style=\"font-size:0.7em;\">Free: "+op.availGB()+"</span><br><meter max=\"100\" value=\""+op.percent()+"\" low=\"80\">"+op.percent()+"%</meter></div>";
 			}
 			
 			// operational info
@@ -148,7 +161,7 @@ public class DuplicationStation extends ServerState {
 				html
 					.append( "<div class=\"device\">" )
 					.append( "<div class=\"device name\">"+op.device()+"</div>" )
-					.append( "<div class=\"device size\">"+op.sizeGiB()+"GiB</div>" )
+					.append( "<div class=\"device size\">"+op.sizeGB()+"B</div>" )
 					.append( diskUsage )
 					.append( link )
 					.append( "<div class=\"device info\">"+statusStr+": "+op.label()+"</div>" )
@@ -160,7 +173,7 @@ public class DuplicationStation extends ServerState {
 				html
 					.append( "<div class=\"device\">" )
 					.append( "<div class=\"device name\">"+op.device()+"</div>" )
-					.append( "<div class=\"device size\">"+op.sizeGiB()+"GiB</div>" )
+					.append( "<div class=\"device size\">"+op.sizeGB()+"</div>" )
 					.append( diskUsage )
 					.append( link )
 					.append( "</div>" )

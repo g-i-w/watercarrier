@@ -199,11 +199,11 @@ public class DuplicateDisk {
 		}
 	}
 		
-	public Set<DiskOperation> status () {
-		Set<DiskOperation> ops = new TreeSet<>();
+	public Set<DiskData> status () {
+		Set<DiskData> ops = new TreeSet<>();
 		Tree deviceTree = safeDevicesTree();
 		for (Tree data : deviceTree.branches()) {
-			DiskOperation op = new DiskOperation( data, this, null ); // null indicates root parent
+			DiskData op = new DiskData( data, this, null ); // null indicates root parent
 			ops.add( op );
 			ops.addAll( op.children() );
 		}

@@ -4,12 +4,12 @@ import java.util.*;
 import paddle.*;
 import creek.*;
 
-public class DiskOperation implements Comparable {
+public class DiskData implements Comparable {
 
 	private DuplicateDisk dd;
-	private DiskOperation parent;
+	private DiskData parent;
 	
-	private Set<DiskOperation> children;
+	private Set<DiskData> children;
 	
 	private String device;
 	private String status;
@@ -19,14 +19,16 @@ public class DiskOperation implements Comparable {
 	private String sizeUnit;
 	private double used;
 	private String usedUnit;
+	private double avail;
+	private String availUnit;
 	private int percent;
 
-	public DiskOperation ( String device ) {
+	public DiskData ( String device ) {
 		this.device = device;
 		refreshStats( data() );
 	}
 
-	public DiskOperation ( Tree deviceData, DuplicateDisk dd, DiskOperation parent ) {
+	public DiskData ( Tree deviceData, DuplicateDisk dd, DiskData parent ) {
 		device = "/dev/"+deviceData.get("name").value();
 		this.dd = dd;
 		this.parent = parent;
@@ -60,10 +62,17 @@ public class DiskOperation implements Comparable {
 			
 			if (deviceData.keys().contains("fsused")) {
 				String usedStr = deviceData.get("fsused").value();
-				//System.out.println( "DiskOperation: "+device+" "+usedStr );
 				if (!usedStr.equals("") && !usedStr.equals("null")) {
 					used = Double.valueOf( usedStr.substring(0, usedStr.length()-1) ).doubleValue();
 					usedUnit = usedStr.substring( usedStr.length()-1, usedStr.length() );
+				}
+			}
+			
+			if (deviceData.keys().contains("fsavail")) {
+				String availStr = deviceData.get("fsavail").value();
+				if (!availStr.equals("") && !availStr.equals("null")) {
+					avail = Double.valueOf( availStr.substring(0, availStr.length()-1) ).doubleValue();
+					availUnit = availStr.substring( availStr.length()-1, availStr.length() );
 				}
 			}
 		} catch (Exception e) {
@@ -93,7 +102,7 @@ public class DiskOperation implements Comparable {
 		
 		if (deviceData.keys().contains("children")) {
 			for (Tree child : deviceData.get("children").branches()) {
-				DiskOperation childOp = new DiskOperation( child, dd, this );
+				DiskData childOp = new DiskData( child, dd, this );
 				children.add( childOp );
 				if (childOp.status().equals("Writing")) status = "Writing";
 			}
@@ -112,11 +121,11 @@ public class DiskOperation implements Comparable {
 		}
 	}
 	
-	public DiskOperation parent () { return parent; }
+	public DiskData parent () { return parent; }
 	
 	public boolean isChild () { return (parent!=null); }
 	
-	public Set<DiskOperation> children () { return children; }
+	public Set<DiskData> children () { return children; }
 	
 	public String device () { return device; }
 	
@@ -138,8 +147,30 @@ public class DiskOperation implements Comparable {
 		return used;
 	}
 	
+	public String usedGB () {
+		if (usedUnit.equals("G")) return String.format("%.1f", used*1.074)+"GB";
+		if (usedUnit.equals("M")) return String.format("%.3f", used*1.049e-3)+"GB";
+		if (usedUnit.toLowerCase().equals("k")) return String.format("%.6f", used*1.024e-6)+"GB";
+		else return String.valueOf( used )+"?iB";
+	}
+	
 	public String usedUnit () {
 		return usedUnit;
+	}
+
+	public double avail () {
+		return avail;
+	}
+	
+	public String availGB () {
+		if (availUnit.equals("G")) return String.format("%.1f", avail*1.074)+"GB";
+		if (availUnit.equals("M")) return String.format("%.3f", avail*1.049e-3)+"GB";
+		if (availUnit.toLowerCase().equals("k")) return String.format("%.6f", avail*1.024e-6)+"GB";
+		else return String.valueOf( avail )+"?iB";
+	}
+	
+	public String availUnit () {
+		return availUnit;
 	}
 
 	public int percent () {
@@ -147,11 +178,17 @@ public class DiskOperation implements Comparable {
 	}
 	
 	public String sizeGiB () {
-		return String.valueOf( size );
+		if (sizeUnit.equals("G")) return String.format("%.1f", size )+"GiB";
+		if (sizeUnit.equals("M")) return String.format("%.3f", size/1024 )+"GiB";
+		if (sizeUnit.equals("k")) return String.format("%.6f", size/1.049e6 )+"GiB";
+		else return String.valueOf( size )+"?iB";
 	}
 	
 	public String sizeGB () {
-		return String.format("%.1f", (size*1.074));
+		if (sizeUnit.equals("G")) return String.format("%.1f", size*1.074)+"GB";
+		if (sizeUnit.equals("M")) return String.format("%.3f", size*1.049e-3)+"GB";
+		if (sizeUnit.toLowerCase().equals("k")) return String.format("%.6f", size*1.024e-6)+"GB";
+		else return String.valueOf( size )+"?iB";
 	}
 	
 	public String sizeb () {
@@ -163,7 +200,7 @@ public class DiskOperation implements Comparable {
 	}
 	
 	public int compareTo( Object op ) {
-		if (op instanceof DiskOperation) return device().compareTo( ((DiskOperation)op).device() );
+		if (op instanceof DiskData) return device().compareTo( ((DiskData)op).device() );
 		else return device().compareTo( op.toString() );
 	}
 
