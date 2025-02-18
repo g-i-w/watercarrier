@@ -1,5 +1,6 @@
 <html>
 <head>
+<meta charset="UTF-8">
 
 <title>Duplication</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -15,22 +16,32 @@ div {
 	margin:4px 8px 4px 8px;
 	padding:2px 4px 2px 4px;
 	border-radius:4px;
+	vertical-align:middle;
+}
+img {
+	margin: 8px 0 8px 0;
+	vertical-align:middle;
 }
 .device {
-	
+	border:solid 1px lightgray;
+	border-radius:4px;
 }
 .name {
 	font-weight:bold;
 }
 .size {
-
+	font-weight:normal;
+	font-size:0.7em;
+}
+.icon {
+	font-size:2em;
 }
 .status {
 	color:#77ff52;
 	background-color:#505050;
 }
 .info {
-	color:#0a0a0a;
+	
 }
 .command {
 	background-color:darkgray;
@@ -49,8 +60,9 @@ div {
 }
 a {
 	text-decoration:none;
-	font-weight:bold;
+	font-weight:normal;
 	color:white;
+	vertical-align:middle;
 }
 a:hover {
 	text-decoration:underline;
@@ -63,8 +75,7 @@ a:hover {
 
 	<br>
 	<div class="command"><a href="/">Refresh Device List</span></a></div>
-	<br>
-	<div class="info">---statusMessage---</div>
+	---statusMessage---
 	<br>
 	<div>---deviceDivs---</div>
 	

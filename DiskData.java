@@ -22,6 +22,7 @@ public class DiskData implements Comparable {
 	private double avail;
 	private String availUnit;
 	private int percent;
+	private int exitValue;
 
 	public DiskData ( String device ) {
 		this.device = device;
@@ -36,6 +37,26 @@ public class DiskData implements Comparable {
 		refreshProc( deviceData );
 	}
 	
+	
+	public static double toGB ( double ib ) {
+		return toGiB( ib, "G" );
+	}
+	
+	public static double toGB ( double ib, String unit ) {
+		if (unit.equals("G")) return ib*1.07374;
+		if (unit.equals("M")) return ib*1.04858e-3;
+		if (unit.toLowerCase().equals("k")) return ib*1.024e-6;
+		if (unit.equals("T")) return ib*1099.51;
+		else return -1.0;
+	}
+	
+	public static double toGiB ( double ib, String unit ) {
+		if (unit.equals("G")) return ib;
+		if (unit.equals("M")) return ib/1024;
+		if (unit.toLowerCase().equals("k")) return ib*(1024*1024);
+		if (unit.equals("T")) return ib*1024;
+		else return -1.0;
+	}
 	
 	public void refreshStats ( Tree deviceData ) {
 		size = 0.0;
@@ -94,6 +115,7 @@ public class DiskData implements Comparable {
 			label = proc.name();
 			String out = proc.stdout().text();
 			String err = proc.stderr().text();
+			exitValue = proc.exitValue();
 			output = ( !out.equals("") ? out : err );
 			if (proc.running()) status = "Writing";
 			else if (proc.destroyed()>0 || proc.destroyedForcibly()>0) status = "Canceled";
@@ -148,10 +170,7 @@ public class DiskData implements Comparable {
 	}
 	
 	public String usedGB () {
-		if (usedUnit.equals("G")) return String.format("%.1f", used*1.074)+"GB";
-		if (usedUnit.equals("M")) return String.format("%.3f", used*1.049e-3)+"GB";
-		if (usedUnit.toLowerCase().equals("k")) return String.format("%.6f", used*1.024e-6)+"GB";
-		else return String.valueOf( used )+"?iB";
+		return String.format( "%.1f", toGB( used, usedUnit ) )+"GB";
 	}
 	
 	public String usedUnit () {
@@ -163,10 +182,7 @@ public class DiskData implements Comparable {
 	}
 	
 	public String availGB () {
-		if (availUnit.equals("G")) return String.format("%.1f", avail*1.074)+"GB";
-		if (availUnit.equals("M")) return String.format("%.3f", avail*1.049e-3)+"GB";
-		if (availUnit.toLowerCase().equals("k")) return String.format("%.6f", avail*1.024e-6)+"GB";
-		else return String.valueOf( avail )+"?iB";
+		return String.format( "%.1f", toGB( avail, availUnit ) )+"GB";
 	}
 	
 	public String availUnit () {
@@ -178,21 +194,19 @@ public class DiskData implements Comparable {
 	}
 	
 	public String sizeGiB () {
-		if (sizeUnit.equals("G")) return String.format("%.1f", size )+"GiB";
-		if (sizeUnit.equals("M")) return String.format("%.3f", size/1024 )+"GiB";
-		if (sizeUnit.equals("k")) return String.format("%.6f", size/1.049e6 )+"GiB";
-		else return String.valueOf( size )+"?iB";
+		return String.format( "%.1f", toGiB( size, sizeUnit ) )+"GiB";
 	}
 	
 	public String sizeGB () {
-		if (sizeUnit.equals("G")) return String.format("%.1f", size*1.074)+"GB";
-		if (sizeUnit.equals("M")) return String.format("%.3f", size*1.049e-3)+"GB";
-		if (sizeUnit.toLowerCase().equals("k")) return String.format("%.6f", size*1.024e-6)+"GB";
-		else return String.valueOf( size )+"?iB";
+		return String.format( "%.1f", toGB( size, sizeUnit ) )+"GB";
 	}
 	
 	public String sizeb () {
 		return String.valueOf( size*Math.pow(1024,3) );
+	}
+	
+	public int exitValue () {
+		return exitValue;
 	}
 	
 	public String toString () {
