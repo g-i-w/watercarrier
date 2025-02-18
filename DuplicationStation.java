@@ -159,11 +159,11 @@ public class DuplicationStation extends ServerState {
 						String style = info.get("style").value(); // extra style information, such as background color
 						double spaceNeeded = tryDouble( info.get("sizeGiB").value() );
 						if (op.size() >= spaceNeeded) {
-							link += "<div class=\"device\" style=\""+style+"\"><a href=\"?output="+op.device()+"&command="+queryCommand+"\">"+label+"</a></div>";
+							link += "<div style=\""+style+"\"><a href=\"?output="+op.device()+"&command="+queryCommand+"\">"+label+"</a></div>";
 						}
 					}
 				} else if (!op.isChild() && op.size() >= bootDiskSizeGiB) { // current minimum capacity for Bible.Local
-					link += "<div class=\"device\" style=\""+bootDiskStyle+"\"><a href=\"?output="+op.device()+"&command="+bootDiskCommand+"\">"+bootDiskLabel+"</a></div>";
+					link += "<div style=\""+bootDiskStyle+"\"><a href=\"?output="+op.device()+"&command="+bootDiskCommand+"\">"+bootDiskLabel+"</a></div>";
 				}
 			}
 			
@@ -234,9 +234,6 @@ public class DuplicationStation extends ServerState {
 				);
 				
 			} else {
-				/*session.response(
-					new ResponseHTTP( "not found" )
-				);*/
 				System.out.println( session.request().path() );
 				httpRespondFile ( session, "watercarrier/pics" );
 			}

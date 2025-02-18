@@ -31,35 +31,35 @@
 			"label" : "<div><span class=\"icon\">🌍</span></div><div><b>Africa</b><br><span class=\"size\">2.0GB</span></div>",
 			"message" : "Copying African Bible translations",
 			"style" : "background-color:lightseagreen;",
-			"path" : "biblesd-Africa/biblesd",
+			"path" : "Africa/biblesd",
 			"sizeGiB" : 1.9
 		},
 		"copyAmericasBibles" : {
 			"label" : "<div><span class=\"icon\">🌎</span></div><div><b>Americas</b><br><span class=\"size\">3.5GB</span></div>",
 			"message" : "Copying Bible translations for North & South America",
 			"style" : "background-color:lightseagreen;",
-			"path" : "biblesd-Americas/biblesd",
+			"path" : "Americas/biblesd",
 			"sizeGiB" : 3.3
 		},
 		"copyEurasiaBibles" : {
 			"label" : "<div><span class=\"icon\">🌏︎</span></div><div><b>Eurasia</b><br><span class=\"size\">4.8GB</span></div>",
 			"message" : "Copying Eurasian Bible translations",
 			"style" : "background-color:lightseagreen;",
-			"path" : "biblesd-Eurasia",
+			"path" : "Eurasia/biblesd",
 			"sizeGiB" : 4.5
 		},
 		"copyOceaniaBibles" : {
 			"label" : "<div><span class=\"icon\">🌏</span></div><div><b>Oceania</b><br><span class=\"size\">4.7GB</span></div>",
 			"message" : "Copying Bible translations for island regions (Oceania)",
 			"style" : "background-color:lightseagreen;",
-			"path" : "biblesd-Oceania",
+			"path" : "Oceania/biblesd",
 			"sizeGiB" : 4.4
 		},
 		"copyBibleTools" : {
 			"label" : "<div><span class=\"icon\">📖</span></div><div><b>Tools</b><br><span class=\"size\">6.2GB</span></div>",
 			"message" : "Copying Bible Tools (OpenBible.com, BibleCrossReference, KJV Search)",
 			"style" : "background-color:mediumaquamarine;",
-			"path" : "biblesd-OpenBible/biblesd",
+			"path" : "tools/biblesd",
 			"sizeGiB" : 5.8
 		}
 	}
