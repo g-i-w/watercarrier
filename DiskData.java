@@ -43,6 +43,7 @@ public class DiskData implements Comparable {
 	}
 	
 	public static double toGB ( double ib, String unit ) {
+		if (unit==null) return -1.0;
 		if (unit.equals("G")) return ib*1.07374;
 		if (unit.equals("M")) return ib*1.04858e-3;
 		if (unit.toLowerCase().equals("k")) return ib*1.024e-6;
@@ -51,11 +52,16 @@ public class DiskData implements Comparable {
 	}
 	
 	public static double toGiB ( double ib, String unit ) {
+		if (unit==null) return -1.0;
 		if (unit.equals("G")) return ib;
 		if (unit.equals("M")) return ib/1024;
 		if (unit.toLowerCase().equals("k")) return ib*(1024*1024);
 		if (unit.equals("T")) return ib*1024;
 		else return -1.0;
+	}
+	
+	public static String decimals( double val, int dec ) {
+		return String.format( "%."+dec+"f", val );
 	}
 	
 	public void refreshStats ( Tree deviceData ) {
@@ -181,8 +187,12 @@ public class DiskData implements Comparable {
 		return avail;
 	}
 	
-	public String availGB () {
-		return String.format( "%.1f", toGB( avail, availUnit ) )+"GB";
+	public double availGiB () {
+		return toGiB( avail, availUnit );
+	}
+	
+	public double availGB () {
+		return toGB( avail, availUnit );
 	}
 	
 	public String availUnit () {
@@ -193,12 +203,12 @@ public class DiskData implements Comparable {
 		return percent;
 	}
 	
-	public String sizeGiB () {
-		return String.format( "%.1f", toGiB( size, sizeUnit ) )+"GiB";
+	public double sizeGiB () {
+		return toGiB( size, sizeUnit );
 	}
 	
-	public String sizeGB () {
-		return String.format( "%.1f", toGB( size, sizeUnit ) )+"GB";
+	public double sizeGB () {
+		return toGB( size, sizeUnit );
 	}
 	
 	public String sizeb () {

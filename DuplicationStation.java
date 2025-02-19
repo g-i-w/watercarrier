@@ -139,7 +139,7 @@ public class DuplicationStation extends ServerState {
 			
 			// disk usage (only applicable to disk partitions, e.g. 'children')
 			if (op.isChild() && op.usedUnit()!=null) {
-				diskUsage = "<div><span style=\"font-size:0.7em;\">Free: "+op.availGB()+"</span><br><meter max=\"100\" value=\""+op.percent()+"\" low=\"80\">"+op.percent()+"%</meter></div>";
+				diskUsage = "<div><span style=\"font-size:0.7em;\">Free: "+DiskData.decimals( op.availGB(), 1 )+"GB</span><br><meter max=\"100\" value=\""+op.percent()+"\" low=\"80\">"+op.percent()+"%</meter></div>";
 			}
 			
 			// if 'Writing' operation then progress bar & cancel button
@@ -166,7 +166,7 @@ public class DuplicationStation extends ServerState {
 						String label = info.get("label").value(); // label for the link, not to be confused with the SystemCommand.label()
 						String style = info.get("style").value(); // extra style information, such as background color
 						double spaceNeeded = tryDouble( info.get("sizeGiB").value() );
-						if (op.size() >= spaceNeeded) {
+						if (op.sizeGiB() >= spaceNeeded) {
 							link += "<div style=\""+style+"\"><a href=\"?output="+op.device()+"&command="+queryCommand+"\">"+label+"</a></div>";
 						}
 					}
@@ -206,7 +206,7 @@ public class DuplicationStation extends ServerState {
 				//System.out.println( op.device()+" "+op.status()+" "+op.label() );
 				html
 					.append( "<div class=\"device\">" )
-					.append( "<div class=\"icon\">&#x1F4BE;</div><div><div class=\"name\">"+op.device()+"<br><span class=\"size\">"+op.sizeGB()+"</span></div>"+diskUsage+"</div>" )
+					.append( "<div class=\"icon\">&#x1F4BE;</div><div><div class=\"name\">"+op.device()+"<br><span class=\"size\">"+DiskData.decimals( op.sizeGB(), 1 )+"GB</span></div>"+diskUsage+"</div>" )
 					.append( link )
 					.append( "<div class=\"info\">"+statusStr+"</div>" )
 					.append( "</div>" )
@@ -214,7 +214,7 @@ public class DuplicationStation extends ServerState {
 			} else {
 				html
 					.append( "<div class=\"device\">" )
-					.append( "<div class=\"icon\">&#x1F4BE;</div><div><div class=\"name\">"+op.device()+"<br><span class=\"size\">"+op.sizeGB()+"</span></div>"+diskUsage+"</div>" )
+					.append( "<div class=\"icon\">&#x1F4BE;</div><div><div class=\"name\">"+op.device()+"<br><span class=\"size\">"+DiskData.decimals( op.sizeGB(), 1 )+"GB</span></div>"+diskUsage+"</div>" )
 					.append( link )
 					.append( "</div>" )
 				;

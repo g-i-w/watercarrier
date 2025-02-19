@@ -7,7 +7,7 @@
 	"htmlTemplateDelim" : "---",
 	
 	"bootDiskUUID" : "9fd7479a-e532-4c4b-b720-5e78f2854ce4",
-	"bootDiskLabel" : "<div><span class=\"icon\">&#x1F4BB;</span></div><div><b>Bible.Local Server</b><br><span class=\"size\">57.4GB</span></div>",
+	"bootDiskLabel" : "<div><span class=\"icon\">&#x1F4BB;</span></div><div><b>Bible.Local Server</b><br><span class=\"size\">57.4GB &#x26A0; Warning: overwrites!</span></div>",
 	"bootDiskCommand" : "cloneBibleLocal",
 	"bootDiskMessage" : "Cloning Bible.Local Server",
 	"bootDiskCount4M" : 13697,
