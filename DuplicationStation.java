@@ -16,6 +16,7 @@ public class DuplicationStation extends ServerState {
 	String bootDisk;
 	String bootDiskLabel;
 	String bootDiskCommand;
+	String bootDiskMessage;
 	String bootDiskStyle;
 	double bootDiskSizeGiB;
 	
@@ -47,6 +48,7 @@ public class DuplicationStation extends ServerState {
 		
 		bootDiskLabel = conf.get( "bootDiskLabel" ).value();
 		bootDiskCommand = conf.get( "bootDiskCommand" ).value();
+		bootDiskMessage = conf.get( "bootDiskMessage" ).value();
 		bootDiskStyle = conf.get( "bootDiskStyle" ).value();
 		bootDiskSizeGiB = tryDouble( conf.get( "bootDiskSizeGiB" ).value() );
 		
@@ -92,7 +94,7 @@ public class DuplicationStation extends ServerState {
 				System.out.println( "************** COPYING "+inputPath+" to "+output+" ("+command+") **************" );
 				statusMessage = prefix + duplicator.directoryToDisk( inputPath, output, command ) + suffix; // query 'command' becomes the label for the SystemCommand process
 			// clone boot disk
-			} else if (conf.get("bootDiskCommand").value().equals( command )) {
+			} else if (bootDiskCommand.equals( command )) {
 				System.out.println( "************** CLONING "+bootDisk+" to "+output+" ("+command+") **************" );
 				statusMessage = prefix + duplicator.diskToDisk( bootDisk, output, command ) + suffix; // query 'command' becomes the label for the SystemCommand process
 			}
@@ -188,9 +190,9 @@ public class DuplicationStation extends ServerState {
 							"<div>"+progressBar+"</div>"+
 							( !op.output().equals("") ? "<div class=\"status\">"+op.output()+"</div>" : "" );
 					// otherwise check for label as bootDiskCommand
-					} else if ( conf.get("bootDiskCommand").equals( op.label() ) ) {
+					} else if ( bootDiskCommand.equals( op.label() ) ) {
 						statusStr =
-							conf.get("bootDiskMessage")+
+							bootDiskMessage+
 							"<div>"+progressBar+"</div>"+
 							( !op.output().equals("") ? "<div class=\"status\">"+op.output()+"</div>" : "" );
 					}
