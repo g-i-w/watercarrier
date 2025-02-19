@@ -181,17 +181,24 @@ public class DuplicationStation extends ServerState {
 						"<span style=\"background-color:rgb(255,200,200);\">Canceled</span>";
 				}
 				if (op.status().equals("Writing")) {
-					Tree info = rsyncInfo.get( op.label() );
-					if (info != null)
+					// check for label (HTML command) in rsyncInfo
+					if ( rsyncInfo.keys().contains( op.label() ) ) {
 						statusStr =
-							info.get( "message" ).value()+
+							rsyncInfo.get( op.label() ).get( "message" ).value()+
 							"<div>"+progressBar+"</div>"+
 							( !op.output().equals("") ? "<div class=\"status\">"+op.output()+"</div>" : "" );
+					// otherwise check for label as bootDiskCommand
+					} else if ( conf.get("bootDiskCommand").equals( op.label() ) ) {
+						statusStr =
+							conf.get("bootDiskMessage")+
+							"<div>"+progressBar+"</div>"+
+							( !op.output().equals("") ? "<div class=\"status\">"+op.output()+"</div>" : "" );
+					}
 				}
 				//System.out.println( op.device()+" "+op.status()+" "+op.label() );
 				html
 					.append( "<div class=\"device\">" )
-					.append( "<div class=\"icon\">💾</div><div><div class=\"name\">"+op.device()+"<br><span class=\"size\">"+op.sizeGB()+"</span></div>"+diskUsage+"</div>" )
+					.append( "<div class=\"icon\">&#x1F4BE;</div><div><div class=\"name\">"+op.device()+"<br><span class=\"size\">"+op.sizeGB()+"</span></div>"+diskUsage+"</div>" )
 					.append( link )
 					.append( "<div class=\"info\">"+statusStr+"</div>" )
 					.append( "</div>" )
@@ -199,7 +206,7 @@ public class DuplicationStation extends ServerState {
 			} else {
 				html
 					.append( "<div class=\"device\">" )
-					.append( "<div class=\"icon\">💾</div><div><div class=\"name\">"+op.device()+"<br><span class=\"size\">"+op.sizeGB()+"</span></div>"+diskUsage+"</div>" )
+					.append( "<div class=\"icon\">&#x1F4BE;</div><div><div class=\"name\">"+op.device()+"<br><span class=\"size\">"+op.sizeGB()+"</span></div>"+diskUsage+"</div>" )
 					.append( link )
 					.append( "</div>" )
 				;

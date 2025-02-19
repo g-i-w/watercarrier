@@ -7,8 +7,9 @@
 	"htmlTemplateDelim" : "---",
 	
 	"bootDiskUUID" : "c686daad-97e2-459f-8c79-8da33cc302c3",
-	"bootDiskLabel" : "<div><span class=\"icon\">💻</span></div><div><b>Bible.Local Server</b><br><span class=\"size\">57.4GB</span></div>",
+	"bootDiskLabel" : "<div><span class=\"icon\">&#x1F4BB;</span></div><div><b>Bible.Local Server</b><br><span class=\"size\">57.4GB</span></div>",
 	"bootDiskCommand" : "cloneBibleLocal",
+	"bootDiskMessage" : "Cloning Bible.Local Server",
 	"bootDiskStyle" : "background-color:darkblue;",
 	"bootDiskSizeGiB" : 53.5,
 	
@@ -21,42 +22,42 @@
 			"sizeGiB" : 15.3
 		},
 		"copyAllBibles" : {
-			"label" : "<div><span class=\"icon\">🗺️</span></div><div><b>Bibles & Tools</b><br><span class=\"size\">15.7GB</span></div>",
+			"label" : "<div><span class=\"icon\">&#x1F5FA;</span></div><div><b>Bibles & Tools</b><br><span class=\"size\">15.7GB</span></div>",
 			"message" : "Copying all Bible translations",
 			"style" : "background-color:darkcyan;",
 			"path" : "/initrd/mnt/dev_save/biblesd",
 			"sizeGiB" : 14.6
 		},
 		"copyAfricaBibles" : {
-			"label" : "<div><span class=\"icon\">🌍</span></div><div><b>Africa</b><br><span class=\"size\">2.0GB</span></div>",
+			"label" : "<div><span class=\"icon\">&#x1F30D;</span></div><div><b>Africa</b><br><span class=\"size\">2.0GB</span></div>",
 			"message" : "Copying African Bible translations",
 			"style" : "background-color:lightseagreen;",
 			"path" : "/initrd/mnt/dev_save/Africa/biblesd",
 			"sizeGiB" : 1.9
 		},
 		"copyAmericasBibles" : {
-			"label" : "<div><span class=\"icon\">🌎</span></div><div><b>Americas</b><br><span class=\"size\">3.5GB</span></div>",
+			"label" : "<div><span class=\"icon\">&#x1F30E;</span></div><div><b>Americas</b><br><span class=\"size\">3.5GB</span></div>",
 			"message" : "Copying Bible translations for North & South America",
 			"style" : "background-color:lightseagreen;",
 			"path" : "/initrd/mnt/dev_save/Americas/biblesd",
 			"sizeGiB" : 3.3
 		},
 		"copyEurasiaBibles" : {
-			"label" : "<div><span class=\"icon\">🌏︎</span></div><div><b>Eurasia</b><br><span class=\"size\">4.8GB</span></div>",
+			"label" : "<div><span class=\"icon\">&#x1F310;</span></div><div><b>Eurasia</b><br><span class=\"size\">4.8GB</span></div>",
 			"message" : "Copying Eurasian Bible translations",
 			"style" : "background-color:lightseagreen;",
 			"path" : "/initrd/mnt/dev_save/Eurasia/biblesd",
 			"sizeGiB" : 4.5
 		},
 		"copyOceaniaBibles" : {
-			"label" : "<div><span class=\"icon\">🌏</span></div><div><b>Oceania</b><br><span class=\"size\">4.7GB</span></div>",
+			"label" : "<div><span class=\"icon\">&#x1F30F;</span></div><div><b>Oceania</b><br><span class=\"size\">4.7GB</span></div>",
 			"message" : "Copying Bible translations for island regions (Oceania)",
 			"style" : "background-color:lightseagreen;",
 			"path" : "/initrd/mnt/dev_save/Oceania/biblesd",
 			"sizeGiB" : 4.4
 		},
 		"copyBibleTools" : {
-			"label" : "<div><span class=\"icon\">📖</span></div><div><b>Tools</b><br><span class=\"size\">6.2GB</span></div>",
+			"label" : "<div><span class=\"icon\">&#x1F4D6;</span></div><div><b>Tools</b><br><span class=\"size\">6.2GB</span></div>",
 			"message" : "Copying Bible Tools (OpenBible.com, BibleCrossReference, KJV Search)",
 			"style" : "background-color:mediumaquamarine;",
 			"path" : "/initrd/mnt/dev_save/tools/biblesd",
