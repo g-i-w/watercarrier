@@ -10,6 +10,7 @@
 	"bootDiskLabel" : "<div><span class=\"icon\">&#x1F4BB;</span></div><div><b>Bible.Local Server</b><br><span class=\"size\">57.4GB</span></div>",
 	"bootDiskCommand" : "cloneBibleLocal",
 	"bootDiskMessage" : "Cloning Bible.Local Server",
+	"bootDiskCount4M" : 13697,
 	"bootDiskStyle" : "background-color:darkblue;",
 	"bootDiskSizeGiB" : 53.5,
 	

@@ -17,6 +17,7 @@ public class DuplicationStation extends ServerState {
 	String bootDiskLabel;
 	String bootDiskCommand;
 	String bootDiskMessage;
+	int bootDiskCount4M;
 	String bootDiskStyle;
 	double bootDiskSizeGiB;
 	
@@ -49,6 +50,7 @@ public class DuplicationStation extends ServerState {
 		bootDiskLabel = conf.get( "bootDiskLabel" ).value();
 		bootDiskCommand = conf.get( "bootDiskCommand" ).value();
 		bootDiskMessage = conf.get( "bootDiskMessage" ).value();
+		bootDiskCount4M = Integer.parseInt( conf.get( "bootDiskCount4M" ).value() );
 		bootDiskStyle = conf.get( "bootDiskStyle" ).value();
 		bootDiskSizeGiB = tryDouble( conf.get( "bootDiskSizeGiB" ).value() );
 		
@@ -96,7 +98,7 @@ public class DuplicationStation extends ServerState {
 			// clone boot disk
 			} else if (bootDiskCommand.equals( command )) {
 				System.out.println( "************** CLONING "+bootDisk+" to "+output+" ("+command+") **************" );
-				statusMessage = prefix + duplicator.diskToDisk( bootDisk, output, command ) + suffix; // query 'command' becomes the label for the SystemCommand process
+				statusMessage = prefix + duplicator.diskToDiskPartial( bootDisk, output, bootDiskCount4M, command ) + suffix; // query 'command' becomes the label for the SystemCommand process
 			}
 		}
 		
@@ -152,6 +154,10 @@ public class DuplicationStation extends ServerState {
 				}
 				link = "<div class=\"cancel\"><a href=\"?output="+op.device()+"&command=cancel\">Cancel</a></div>";
 				
+			// if 'Writing' operation then progress bar & cancel button
+			} else if (op.status().equals("Busy")) {
+				
+			
 			// otherwise link button(s) where applicable
 			} else {
 				if (op.isChild() && !op.parent().status().equals("Writing")) {

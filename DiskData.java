@@ -122,11 +122,11 @@ public class DiskData implements Comparable {
 			else status = "Complete";
 		}
 		
-		if (deviceData.keys().contains("children")) {
+		if (!status.equals("Writing") && deviceData.keys().contains("children")) {
 			for (Tree child : deviceData.get("children").branches()) {
 				DiskData childOp = new DiskData( child, dd, this );
 				children.add( childOp );
-				if (childOp.status().equals("Writing")) status = "Writing";
+				if (childOp.status().equals("Writing")) status = "Busy";
 			}
 		}
 	}

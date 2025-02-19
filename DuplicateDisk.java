@@ -25,7 +25,8 @@ public class DuplicateDisk {
 	public String diskToFile ( String device, String file, String label ) {
 		try {
 			if (!devices.deviceList().contains(device)) throw new Exception( device+" not found" );
-			runScript( device, file, "./watercarrier/diskToFile.sh", label );
+			safeOutput( file );
+			runCommand( file, "./watercarrier/diskToFile.sh "+device+" "+file, label );
 			return "Writing disk "+device+" to file "+file;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -36,7 +37,8 @@ public class DuplicateDisk {
 	public String fileToDisk ( String file, String device, String label ) {
 		try {
 			safeUnmount( device );
-			runScript( file, device, "./watercarrier/fileToDisk.sh", label );
+			safeOutput( device );
+			runCommand( device, "./watercarrier/fileToDisk.sh "+file+" "+device, label );
 			return "Writing file "+file+" to disk "+device;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -47,8 +49,21 @@ public class DuplicateDisk {
 	public String diskToDisk ( String input, String output, String label ) {
 		try {
 			safeUnmount( output );
-			runScript( input, output, "./watercarrier/diskToDisk.sh", label );
+			safeOutput( output );
+			runCommand( output, "./watercarrier/diskToDisk.sh "+input+" "+output, label );
 			return "Copying disk "+input+" to disk "+output;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return e.getMessage();
+		}
+	}
+	
+	public String diskToDiskPartial ( String input, String output, int count, String label ) {
+		try {
+			safeUnmount( output );
+			safeOutput( output );
+			runCommand( output, "./watercarrier/diskToDiskPartial.sh "+input+" "+output+" "+count, label );
+			return "Copying disk "+input+" to disk "+output+" ("+count+" * 4MiB blocks)";
 		} catch (Exception e) {
 			e.printStackTrace();
 			return e.getMessage();
@@ -58,12 +73,17 @@ public class DuplicateDisk {
 	public String directoryToDisk ( String dir, String device, String label ) {
 		try {
 			safeUnmount( device );
-			runScript( dir, device, "./watercarrier/directoryToDisk.sh", label );
+			safeOutput( device );
+			runCommand( device, "./watercarrier/directoryToDisk.sh "+dir+" "+device, label );
 			return "Copying path "+dir+" to disk "+device;
 		} catch (Exception e) {
 			e.printStackTrace();
 			return e.getMessage();
 		}
+	}
+	
+	public void dd ( String in, String out ) throws Exception {
+		runCommand( out, "./watercarrier/raw.sh "+in+" "+out, "IN: "+in+", OUT: "+out );
 	}
 	
 	public void umount ( String device ) throws Exception {
@@ -103,20 +123,15 @@ public class DuplicateDisk {
 		umount( device );		
 	}
 	
-	public void dd ( String in, String out ) throws Exception {
-		runScript( in, out, "./watercarrier/raw.sh", "IN: "+in+", OUT: "+out );
+	public void safeOutput ( String output ) throws Exception {
+		if (processes.containsKey(output) && !processes.get(output).finished())
+			throw new Exception( "Process '"+processes.get(output).name()+"' is writing to device '"+output+"'" );
 	}
 
-	public void runScript ( String input, String output, String script, String label ) throws Exception {
+	public void runCommand ( String output, String command, String label ) throws Exception {
 	
-		if (processes.containsKey(output) && !processes.get(output).finished()) throw new Exception( output+" is busy" );
-		
-		System.out.println( input+","+output+","+script+","+label );
-		
-		String command = script+" "+input+" "+output;
-		
+		System.out.println( "**** '"+label+"' --> '"+output+"' ****" );
 		System.out.println( command );
-		System.out.println( label );
 		
 		SystemCommand ddProc = new SystemCommand(
 			command,
