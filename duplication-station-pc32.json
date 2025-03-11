@@ -7,12 +7,13 @@
 	"htmlTemplateDelim" : "---",
 	
 	"bootDiskUUID" : "c686daad-97e2-459f-8c79-8da33cc302c3",
-	"bootDiskLabel" : "<div><span class=\"icon\">&#x1F4BB;</span></div><div><b>Bible.Local Server</b><br><span class=\"size\">57.4GB &#x26A0; Warning: overwrites!</span></div>",
+	"bootDiskLabel" : "<div><span class=\"icon\">&#x1F4BB;</span></div><div><b>Bible.Local PC Server</b><br><span class=\"size\">57.4GB &#x26A0; Warning: overwrites!</span></div>",
 	"bootDiskCommand" : "cloneBibleLocal",
 	"bootDiskMessage" : "Cloning Bible.Local Server",
 	"bootDiskCount4M" : 13697,
 	"bootDiskStyle" : "background-color:darkblue;",
 	"bootDiskSizeGiB" : 53.5,
+	"allowDisksBeforeBoot" : false,
 	
 	"rsyncDirectories" : {
 		"copyRaptureKit" : {

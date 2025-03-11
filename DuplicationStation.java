@@ -54,7 +54,14 @@ public class DuplicationStation extends ServerState {
 		bootDiskStyle = conf.get( "bootDiskStyle" ).value();
 		bootDiskSizeGiB = tryDouble( conf.get( "bootDiskSizeGiB" ).value() );
 		
-		duplicator = new DuplicateDisk();
+		String allowDisksBeforeBoot = conf.get( "allowDisksBeforeBoot" ).value();
+		if (allowDisksBeforeBoot.toLowerCase().equals("true")) {
+			// DuplicateDisk knows bootDisk, so everything else is considered "safe"
+			duplicator = new DuplicateDisk( bootDisk );
+		} else {
+			// DuplicateDisk does NOT know bootDisk, so only addedDevices() are considered "safe"
+			duplicator = new DuplicateDisk();
+		}
 		
 		biblelocalTemplate = new TemplateFile(
 			conf.get("htmlTemplatePath").value(),
