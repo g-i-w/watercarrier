@@ -7,12 +7,13 @@
 	"htmlTemplateDelim" : "---",
 	
 	"bootDiskUUID" : "e249debb-01fb-499b-8aba-c599ecec124b",
-	"bootDiskLabel" : "<div><span class=\"icon\">&#x1F353;</span></div><div><b>Bible.Local RasPi</b><br><span class=\"size\">57.4GB &#x26A0; Warning: overwrites!</span></div>",
+	"bootDiskLabel" : "<div><span class=\"icon\">&#x1F353;</span></div><div><b>Bible.Local RasPi Server</b><br><span class=\"size\">60.7GB &#x26A0; Warning: overwrites!</span></div>",
 	"bootDiskCommand" : "cloneBibleLocal",
 	"bootDiskMessage" : "Cloning Bible.Local Server",
 	"bootDiskCount4M" : 14465,
 	"bootDiskStyle" : "background-color:darkblue;",
 	"bootDiskSizeGiB" : 56.5,
+	"allowDisksBeforeBoot" : true,
 	
 	"rsyncDirectories" : {
 		"copyRaptureKit" : {
